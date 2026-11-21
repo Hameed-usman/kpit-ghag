@@ -411,6 +411,82 @@ function updateCallCaption(speaker, text) {
 /**
  * Two-Way Automated Call Agent (1700 Simulation)
  */
+// ─── Dynamic human-like call phrases ─────────────────────────────────────────
+const CALL_PHRASES = {
+  connecting: {
+    ur: ['📞 کنکٹ ہو رہا ہے...', '📞 لائن مل رہی ہے...', '📞 آفیسر سے رابطہ...'],
+    ps: ['📞 نښلول کیږي...', '📞 کرښه موندل کیږي...', '📞 آفیسر سره اړیکه...'],
+    en: ['📞 Connecting...', '📞 Reaching agent...', '📞 Dialing 1700...']
+  },
+  listening: {
+    ur: ['🎙️ مائیک کھلا ہے — بولیے', '🎙️ آپ کی آواز سن رہا ہوں', '🎙️ اپنا سوال پوچھیے'],
+    ps: ['🎙️ مایکروفون خلاص دی — وغږیږئ', '🎙️ ستاسو غږ اورم', '🎙️ خپله پوښتنه وکړئ'],
+    en: ['🎙️ Mic open — speak now', '🎙️ Listening for your question', '🎙️ Go ahead, ask away']
+  },
+  searching: {
+    ur: ['⏳ سرکاری ریکارڈ میں دیکھ رہا ہوں...', '⏳ دستاویزات چیک ہو رہے ہیں...', '⏳ جواب ڈھونڈ رہا ہوں...', '⏳ گزٹ میں تلاش جاری ہے...'],
+    ps: ['⏳ رسمي ریکارډ کتل کیږي...', '⏳ اسناد چیک کیږي...', '⏳ ځواب لټول کیږي...'],
+    en: ['⏳ Checking official records...', '⏳ Searching the gazette...', '⏳ Looking up verified info...', '⏳ One moment please...']
+  },
+  citizenListening: {
+    ur: [
+      'آپ بولیے — مائیک کھلا ہے۔ سوال ختم ہونے پر ✅ دبائیں',
+      'اپنا سوال واضح آواز میں بولیے — پھر ✅ دبائیں',
+      'بولنا شروع کریں — جب مکمل ہو جائے تو "بول چکا ہوں" دبائیں',
+      'ڈومیسائل کے بارے میں جو پوچھنا ہو بولیے'
+    ],
+    ps: [
+      'وغږیږئ — مایکروفون خلاص دی. د پای کولو لپاره ✅ فشار کړئ',
+      'خپله پوښتنه روښانه ووایاست — بیا ✅ فشار کړئ'
+    ],
+    en: [
+      'Speak your question — mic is live. Press ✅ when done',
+      'Go ahead, ask anything about domicile — press Done when finished',
+      'Your mic is open. Speak clearly, then press Done Speaking',
+      'Ask your question now — I am listening'
+    ]
+  },
+  nextQuestion: {
+    ur: [
+      'کوئی اور سوال؟ بولیے — یا کال ختم کریں',
+      'مزید معلومات چاہیے؟ پوچھیے',
+      'آپ کا اگلا سوال کیا ہے؟',
+      'کوئی اور بات؟ میں حاضر ہوں'
+    ],
+    ps: ['بله پوښتنه؟ وغږیږئ — یا کال پای ته ورسوئ', 'نور معلومات پکاردي؟ وپوښتئ'],
+    en: ['Another question? Go ahead', 'Anything else? I am here', 'Ask your next question', 'What else can I help you with?']
+  },
+  searching_caption: {
+    ur: [
+      'جی ضرور — میں آپ کے لیے سرکاری دستاویزات میں دیکھتا ہوں...',
+      'ایک لمحہ — گزٹ نوٹیفکیشن اور سرکاری ہدایات چیک کر رہا ہوں...',
+      'آپ کا سوال سن لیا — ابھی سرکاری ریکارڈ میں تلاش کر رہا ہوں...',
+      'جی، میں KP سٹیزن پورٹل کے ڈیٹا بیس سے جواب نکال رہا ہوں...'
+    ],
+    ps: [
+      'ضرور — د رسمي اسنادو کې ستاسو ځواب لټوم...',
+      'یوه شیبه — د حکومت ریکارډ کتل کیږي...'
+    ],
+    en: [
+      'Got it — checking verified government records for you...',
+      'One moment — searching the official KP gazette...',
+      'Heard you — looking up official documentation now...',
+      'Right away — scanning verified citizen facilitation data...'
+    ]
+  }
+};
+
+/** Pick a random phrase from a list */
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+/** Get localized phrase set for current lang */
+function callPhrase(key, lang) {
+  const set = CALL_PHRASES[key];
+  if (!set) return '';
+  return pick(set[lang] || set.ur || ['']);
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 async function startTwoWayCall() {
   hideMicError();
   const lang = (state.langHint === 'auto' ? 'ur' : state.langHint) || 'ur';
@@ -421,18 +497,25 @@ async function startTwoWayCall() {
 
   // Unlock browser audio for this user-gesture click
   if (elements.askAudioPlayer) {
-    elements.askAudioPlayer.play().then(() => elements.askAudioPlayer.pause()).catch(() => {});
+    elements.askAudioPlayer.play().then(() => elements.askAudioPlayer.pause()).catch(() => { });
   }
 
   if (elements.askCallAgentBtn) elements.askCallAgentBtn.classList.add('hidden');
   if (elements.callActiveBar) elements.callActiveBar.classList.remove('hidden');
   if (elements.callSummaryCard) elements.callSummaryCard.classList.add('hidden');
 
-  // Hide mic button during call — only the "Done Speaking" button controls recording
+  // Hide standalone mic button during call — "Done Speaking" controls recording
   if (elements.askMicBtn) elements.askMicBtn.style.pointerEvents = 'none';
 
-  updateCallStatus('Connecting... Agent greeting in progress');
-  updateCallCaption('1700 آفیسر (Officer)', 'السلام علیکم! خیبر پختونخوا سٹیزن ہیلپ لائن میں خوش آمدید۔ ڈومیسائل کے بارے میں آپ کو کیا معلومات چاہیے؟');
+  // Phase 1: "Connecting" — animate dialing
+  const connectingPhrases = CALL_PHRASES.connecting[lang] || CALL_PHRASES.connecting.ur;
+  let connectIdx = 0;
+  updateCallStatus(connectingPhrases[connectIdx]);
+  updateCallCaption('1700 آفیسر (Officer)', '...');
+  const connectAnim = setInterval(() => {
+    connectIdx = (connectIdx + 1) % connectingPhrases.length;
+    updateCallStatus(connectingPhrases[connectIdx]);
+  }, 700);
 
   clearInterval(state.callTimerInterval);
   state.callTimerInterval = setInterval(() => {
@@ -442,10 +525,22 @@ async function startTwoWayCall() {
     if (elements.callTimer) elements.callTimer.textContent = `${mm}:${ss}`;
   }, 1000);
 
-  // Play greeting, then START RECORDING ONLY AFTER GREETING FINISHES
+  // Play greeting, then START RECORDING ONLY AFTER GREETING FULLY FINISHES
   try {
     const greetingAudio = new Audio(`/api/v1/call/greeting?lang=${lang}`);
     state.currentCallAudio = greetingAudio;
+
+    // Show greeting caption just before it plays
+    greetingAudio.oncanplay = () => {
+      clearInterval(connectAnim);
+      updateCallStatus('📢 Agent greeting...');
+      const greetingTexts = {
+        ur: 'السلام علیکم! خیبر پختونخوا سٹیزن ہیلپ لائن میں خوش آمدید۔ ڈومیسائل کے بارے میں کیا جاننا ہے؟',
+        ps: 'سلام علیکم! د خیبر پختونخوا ولسي خدمت مرکز ته ښه راغلاست. د ډومیسائل سند بارې پوښتنه وکړئ.',
+        en: 'Hello! Welcome to Khyber Pakhtunkhwa Citizen Facilitation. How may I help you with your Domicile Certificate today?'
+      };
+      updateCallCaption('1700 آفیسر (Officer)', greetingTexts[lang] || greetingTexts.ur);
+    };
 
     await new Promise((resolve, reject) => {
       greetingAudio.onended = resolve;
@@ -454,30 +549,32 @@ async function startTwoWayCall() {
     });
 
     state.currentCallAudio = null;
+    clearInterval(connectAnim);
     if (!state.isCallMode) return;
 
-    // Now greeting is done — start listening
     _callStartListening(lang);
 
   } catch (err) {
-    // Fallback: use TTS then wait 4.5s before starting mic
+    clearInterval(connectAnim);
     const greetings = {
-      ur: 'السلام علیکم! خیبر پختونخوا سٹیزن ہیلپ لائن میں خوش آمدید۔ ڈومیسائل کے بارے میں آپ کو کیا معلومات چاہیے؟',
-      ps: 'سلام علیکم! د خیبر پختونخوا ولسي خدمت مرکز ته ښه راغلاست. د ډومیسائل سند په اړه تاسو ته څه معلومات پکار دي؟',
-      en: 'Hello and welcome to Khyber Pakhtunkhwa Citizen Facilitation. How may I assist you with your Domicile Certificate today?'
+      ur: 'السلام علیکم! خیبر پختونخوا سٹیزن ہیلپ لائن میں خوش آمدید۔ ڈومیسائل کے بارے میں کیا جاننا ہے؟',
+      ps: 'سلام علیکم! د ډومیسائل سند بارې پوښتنه وکړئ.',
+      en: 'Hello! Welcome to Khyber Pakhtunkhwa Citizen Facilitation. How may I help you today?'
     };
+    updateCallStatus('📢 Agent greeting...');
+    updateCallCaption('1700 آفیسر (Officer)', greetings[lang] || greetings.ur);
     speakFallback(greetings[lang] || greetings.ur, lang);
     setTimeout(() => {
       if (!state.isCallMode) return;
       _callStartListening(lang);
-    }, 4500);
+    }, 4800);
   }
 }
 
 /** Internal: transition call UI into "listening" mode and start mic */
 async function _callStartListening(lang) {
-  updateCallStatus('🎙️ Mic is open — Speak your question now');
-  updateCallCaption('سائل (Citizen)', 'آپ بولیے... سوال مکمل ہونے پر "بول چکا ہوں" دبائیں');
+  updateCallStatus(callPhrase('listening', lang));
+  updateCallCaption('سائل (Citizen)', callPhrase('citizenListening', lang));
   if (!state.isRecording) {
     await startRecording('ask');
   }
@@ -539,7 +636,7 @@ async function endTwoWayCall() {
   try {
     const goodbyeAudio = new Audio(`/api/v1/call/goodbye?lang=${lang}`);
     state.currentCallAudio = goodbyeAudio;
-    goodbyeAudio.play().catch(() => {});
+    goodbyeAudio.play().catch(() => { });
   } catch (e) {
     speakFallback("شکریہ! حکومت خیبر پختونخوا کے سٹیزن پورٹل سے رابطہ کرنے کا شکریہ۔ آپ کسی بھی وقت دوبارہ رابطہ کر سکتے ہیں۔ اللہ حافظ!", lang);
   }
@@ -642,7 +739,7 @@ async function startRecording(mode) {
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    
+
     let mimeType = '';
     if (MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
       mimeType = 'audio/webm;codecs=opus';
@@ -704,8 +801,9 @@ async function startRecording(mode) {
       elements.askTimer.textContent = '00:00';
       if (state.isCallMode) {
         if (elements.callDoneSpeakingBtn) elements.callDoneSpeakingBtn.classList.remove('hidden');
-        updateCallStatus('Agent listening... Speak your question hands-free');
-        updateCallCaption('سائل (Citizen)', 'آپ بولیے (مائیک کھلا ہے)... بول کر "میں بول چکا ہوں" دبائیں یا توقف کریں');
+        const callLang = (state.langHint === 'auto' ? 'ur' : state.langHint) || 'ur';
+        updateCallStatus(callPhrase('listening', callLang));
+        updateCallCaption('سائل (Citizen)', callPhrase('citizenListening', callLang));
       }
       startWaveformSimulation();
     } else {
@@ -892,7 +990,7 @@ function renderAskResult(data, latencyMs = null) {
   elements.askTranscriptInput.value = data.transcript || data.question || '';
   const lang = (data.lang || 'ur').toLowerCase();
   elements.askDetectedLang.textContent = lang === 'ur' ? 'URDU (اردو)' : (lang === 'ps' ? 'PASHTO (پښتو)' : 'ENGLISH');
-  
+
   const isRtl = (lang === 'ur' || lang === 'ps');
   elements.askTranscriptInput.dir = isRtl ? 'rtl' : 'ltr';
 
@@ -993,8 +1091,8 @@ function renderAskResult(data, latencyMs = null) {
     // After answer audio finishes → restart mic automatically for next question
     const onAnswerFinished = () => {
       if (!state.isCallMode) return;
-      updateCallStatus('🎙️ Mic is open — Speak your next question');
-      updateCallCaption('سائل (Citizen)', 'آپ اگلا سوال بولیے... یا کال ختم کرنے کے لیے "End Call" دبائیں');
+      updateCallStatus(callPhrase('listening', lang));
+      updateCallCaption('سائل (Citizen)', callPhrase('nextQuestion', lang));
       // 1.5s pause so agent audio fully stops before mic opens
       setTimeout(async () => {
         if (state.isCallMode && !state.isRecording) {
