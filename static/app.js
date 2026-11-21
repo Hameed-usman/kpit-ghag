@@ -14,6 +14,9 @@ const state = {
   callDurationSeconds: 0,
   callTimerInterval: null,
   callHistory: [],
+  currentCallAudio: null,
+  askAbortController: null,
+  discardRecording: false,
   mediaRecorder: null,
   audioChunks: [],
   recordTimer: null,
@@ -439,8 +442,10 @@ async function startTwoWayCall() {
 
   try {
     const greetingAudio = new Audio(`/api/v1/call/greeting?lang=${lang}`);
+    state.currentCallAudio = greetingAudio;
     greetingAudio.onended = async () => {
       if (!state.isCallMode) return;
+      state.currentCallAudio = null;
       updateCallStatus('Agent listening... Speak your question hands-free');
       updateCallCaption('سائل (Citizen)', 'آپ بولیے (مائیک کھلا ہے)... بولنے کے بعد "میں بول چکا ہوں" دبائیں یا توقف کریں');
       if (!state.isRecording) {
@@ -480,19 +485,49 @@ async function endTwoWayCall() {
   state.isCallMode = false;
   clearInterval(state.callTimerInterval);
 
+  // 1. Immediately abort any in-flight /ask fetch
+  if (state.askAbortController) {
+    state.askAbortController.abort();
+    state.askAbortController = null;
+  }
+
+  // 2. Stop and clear all existing audio players immediately
+  if (elements.askAudioPlayer) {
+    elements.askAudioPlayer.pause();
+    elements.askAudioPlayer.currentTime = 0;
+    elements.askAudioPlayer.removeAttribute('src');
+    elements.askAudioPlayer.onended = null;
+  }
+  if (elements.checkAudioPlayer) {
+    elements.checkAudioPlayer.pause();
+    elements.checkAudioPlayer.currentTime = 0;
+  }
+  if (state.currentCallAudio) {
+    state.currentCallAudio.pause();
+    state.currentCallAudio.currentTime = 0;
+    state.currentCallAudio = null;
+  }
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+
+  // 3. Stop recording and discard audio so it does not submit
   if (state.isRecording) {
+    state.discardRecording = true;
     stopRecording();
   }
 
   const lang = (state.langHint === 'auto' ? 'ur' : state.langHint) || 'ur';
   updateCallStatus('Call Completed');
-  updateCallCaption('1700 Officer (آفیسر)', 'شکریہ! حکومت خیبر پختونخوا کے سٹیزن پورٹل سے رابطہ کرنے کا شکریہ۔ اللہ حافظ!');
+  updateCallCaption('1700 Officer (آفیسر)', 'شکریہ! حکومت خیبر پختونخوا کے سٹیزن پورٹل سے رابطہ کرنے کا شکریہ۔ آپ کسی بھی وقت دوبارہ رابطہ کر سکتے ہیں۔ اللہ حافظ!');
 
+  // 4. Play ONLY the goodbye audio cleanly
   try {
     const goodbyeAudio = new Audio(`/api/v1/call/goodbye?lang=${lang}`);
+    state.currentCallAudio = goodbyeAudio;
     goodbyeAudio.play().catch(() => {});
   } catch (e) {
-    speakFallback("شکریہ! حکومت خیبر پختونخوا کے سٹیزن پورٹل سے رابطہ کرنے کا شکریہ۔ اللہ حافظ!", lang);
+    speakFallback("شکریہ! حکومت خیبر پختونخوا کے سٹیزن پورٹل سے رابطہ کرنے کا شکریہ۔ آپ کسی بھی وقت دوبارہ رابطہ کر سکتے ہیں۔ اللہ حافظ!", lang);
   }
 
   if (elements.callDoneSpeakingBtn) elements.callDoneSpeakingBtn.classList.add('hidden');
@@ -565,8 +600,15 @@ function announceProcessing() {
   updateCallStatus('Checking official government records...');
   updateCallCaption('1700 Officer (آفیسر)', 'جی، میں آپ کے لیے سرکاری ریکارڈ دیکھ رہا ہوں، ذرا انتظار کیجیے۔');
 
+  if (state.currentCallAudio) {
+    state.currentCallAudio.pause();
+    state.currentCallAudio.currentTime = 0;
+    state.currentCallAudio = null;
+  }
+
   try {
     const waitAudio = new Audio(`/api/v1/call/wait?lang=${lang}`);
+    state.currentCallAudio = waitAudio;
     waitAudio.play().catch(() => {});
   } catch (e) {
     const waitTexts = {
@@ -607,6 +649,10 @@ async function startRecording(mode) {
 
     state.mediaRecorder.onstop = () => {
       stream.getTracks().forEach(track => track.stop());
+      if (state.discardRecording) {
+        state.discardRecording = false;
+        return;
+      }
       const mime = state.mediaRecorder.mimeType || 'audio/webm';
       const audioBlob = new Blob(state.audioChunks, { type: mime });
       if (elements.callDoneSpeakingBtn) elements.callDoneSpeakingBtn.classList.add('hidden');
@@ -776,10 +822,16 @@ async function submitAskText() {
  * Submit Ask Audio
  */
 async function submitAskAudio(blob) {
+  if (state.discardRecording) {
+    state.discardRecording = false;
+    return;
+  }
+
   showAskLoading(true);
   const startTime = performance.now();
 
   try {
+    state.askAbortController = new AbortController();
     const formData = new FormData();
     const filename = blob.type.includes('mp4') ? 'voice.mp4' : 'voice.webm';
     formData.append('audio', blob, filename);
@@ -789,7 +841,8 @@ async function submitAskAudio(blob) {
 
     const res = await fetch('/api/v1/ask', {
       method: 'POST',
-      body: formData
+      body: formData,
+      signal: state.askAbortController.signal
     });
 
     if (!res.ok) {
@@ -799,11 +852,18 @@ async function submitAskAudio(blob) {
 
     const data = await res.json();
     const elapsed = Math.round(performance.now() - startTime);
+
+    // If call was ended while fetch was in flight, do NOT render or speak!
+    if (!state.isCallMode && state.callHistory.length > 0) {
+      return;
+    }
     renderAskResult(data, elapsed);
 
   } catch (err) {
+    if (err.name === 'AbortError') return;
     showMicError(`Error processing audio: ${err.message}`);
   } finally {
+    state.askAbortController = null;
     showAskLoading(false);
   }
 }

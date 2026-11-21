@@ -127,6 +127,24 @@ class KnowledgeBase:
             return False
         return source_id.strip() in self.sections
 
+    def find_matching_section_id(self, question: str, answer: str = "") -> Optional[str]:
+        """Attempt to recover verified section ID if LLM omitted it for a grounded inquiry."""
+        text = f"{question} {answer}".lower()
+        keyword_maps = [
+            ("dom-fees", ["فیس", "fee", "fees", "500", "rupees", "روپے", "چالان", "challan", "کتنی ہے"]),
+            ("dom-timeline", ["دن", "time", "timeline", "کتنے دن", "7 دن", "سات دن", "7 days", "days", "وقت"]),
+            ("dom-requirements", ["کاغذات", "دستاویزات", "documents", "requirements", "شناختی کارڈ", "cnic", "تصاویر", "photos", "فارم بی"]),
+            ("dom-procedure", ["طریقہ", "procedure", "process", "اپلائی", "apply", "مراحل", "steps"]),
+            ("dom-eligibility", ["اہلیت", "eligibility", "کون بنوا سکتا", "عمر", "age", "نابالغ", "minor"]),
+            ("dom-tracking", ["ٹریکنگ", "track", "tracking", "verification", "تصدیق"]),
+            ("dom-channels", ["کہاں", "where", "portal", "پورٹل", "دفتر", "مرکز", "office"]),
+        ]
+        for sec_id, keywords in keyword_maps:
+            if sec_id in self.sections:
+                if any(kw in text for kw in keywords):
+                    return sec_id
+        return None
+
     def get_source_url(self, source_id: Optional[str]) -> Optional[str]:
         """Retrieve canonical source_url for a verified section."""
         if not source_id:

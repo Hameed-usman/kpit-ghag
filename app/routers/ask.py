@@ -51,9 +51,9 @@ _WAIT_TEXTS: dict[str, str] = {
 }
 
 _GOODBYE_TEXTS: dict[str, str] = {
-    "ur": "شکریہ! حکومت خیبر پختونخوا کے سٹیزن پورٹل سے رابطہ کرنے کا شکریہ۔ اللہ حافظ!",
-    "ps": "مننه! د خیبر پختونخوا ولسي خدمت مرکز سره د تماس لپاره مننه. د خدای پامان!",
-    "en": "Thank you for contacting Khyber Pakhtunkhwa Citizen Facilitation. Have a great day!",
+    "ur": "شکریہ! حکومت خیبر پختونخوا کے سٹیزن پورٹل سے رابطہ کرنے کا شکریہ۔ آپ کسی بھی وقت دوبارہ رابطہ کر سکتے ہیں۔ اللہ حافظ!",
+    "ps": "مننه! د خیبر پختونخوا ولسي خدمت مرکز سره د تماس لپاره مننه. تاسو هر وخت بیا اړیکه نیولی شئ. د خدای پامان!",
+    "en": "Thank you for contacting Khyber Pakhtunkhwa Citizen Facilitation. You may connect again anytime. Have a great day!",
 }
 
 _CALL_AUDIO_CACHE: dict[str, bytes] = {}
@@ -206,6 +206,14 @@ async def ask_endpoint(
 
     # 4. Strict Validation in Code: Never trust the LLM on source_id!
     valid_source = active_kb.source_id_valid(answer_result.source_id)
+    if not valid_source and answer_result.confident and not (answer_result.source_id and answer_result.source_id.strip()):
+        # Only recover when source_id was completely omitted (empty string) on short follow-up voice query
+        recovered_id = active_kb.find_matching_section_id(transcript, answer_result.answer)
+        if recovered_id and active_kb.source_id_valid(recovered_id):
+            log.info("P-2 Source ID Recovery: Auto-mapped to '%s'", recovered_id)
+            answer_result.source_id = recovered_id
+            valid_source = True
+
     is_confident = answer_result.confident and valid_source
 
     response_lang = answer_result.lang if answer_result.lang in ("ur", "ps", "en") else detected_lang
