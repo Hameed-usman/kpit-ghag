@@ -35,6 +35,10 @@ class AskResponse(BaseModel):
     outcome: Outcome
     source_id: Optional[str] = None
     source_url: Optional[str] = None
+    last_verified: Optional[str] = None
+    confident: Optional[bool] = None
+    handoff_reason: Optional[str] = None
+    latency_ms: Optional[int] = None
     sms_text: str = Field(..., max_length=160)
     audio_b64: Optional[str] = None
     tts_available: bool = True
@@ -78,6 +82,11 @@ class CheckResponse(BaseModel):
     spoken: str
     sms: str
     source_id: Optional[str] = "dom-checklist"
+    source_url: Optional[str] = "https://cfc.kp.gov.pk/"
+    last_verified: Optional[str] = None
+    confident: Optional[bool] = None
+    handoff_reason: Optional[str] = None
+    latency_ms: Optional[int] = None
     tts_available: bool = True
     audio_b64: Optional[str] = None
 

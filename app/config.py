@@ -23,8 +23,11 @@ class Config(BaseSettings):
 
     # App behaviour
     demo_mode: bool = False          # True → serve eval/demo_fixture.json offline
+    public_mode: bool = False        # True → public safe mode: 403 on approve/audit, no docs, strict CORS
+    rate_limit_rpm: int = 10         # In-memory client IP rate limit requests per minute
     confidence_threshold: float = 0.75
     max_audio_bytes: int = 10 * 1024 * 1024  # 10 MB
+    max_audio_seconds: int = 30
 
     # DB
     db_path: str = "ghag.db"

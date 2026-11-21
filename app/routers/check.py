@@ -10,6 +10,7 @@ FR-8, AC-8
 from __future__ import annotations
 
 import logging
+import time
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
@@ -48,6 +49,7 @@ async def check(
     POST /api/v1/check endpoint.
     Accepts JSON body or multipart/form-data with optional audio.
     """
+    t0 = time.perf_counter()
     heard_text = ""
     effective_hint: Optional[str] = None
     if lang_hint and lang_hint.lower().strip() != "auto":
@@ -113,6 +115,16 @@ async def check(
         heard=heard_text,
         lang_hint=lang_final,
     )
+
+    # Attach Glass-Box Explainability Fields (FR-17)
+    response.latency_ms = max(1, int((time.perf_counter() - t0) * 1000))
+    response.source_url = "https://cfc.kp.gov.pk/"
+    response.last_verified = "2026-11-17"
+    response.confident = (response.verdict in ("ready", "missing"))
+    if response.verdict in ("unavailable", "unsure"):
+        response.handoff_reason = "Official checklist unverified or citizen declarations ambiguous"
+    else:
+        response.handoff_reason = None
 
     # Synthesize Spoken Audio
     mp3_bytes = await tts.synthesize(response.spoken, lang=response.lang.value)

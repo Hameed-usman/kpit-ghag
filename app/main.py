@@ -10,12 +10,14 @@ import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 from app.config import settings
 from app.services import kb, logstore, tts
+from app.services.rate_limiter import rate_limiter, RATE_LIMIT_DETAIL
 
 log = logging.getLogger(__name__)
 logging.basicConfig(
@@ -49,21 +51,72 @@ async def lifespan(app: FastAPI):
 
 def create_app() -> FastAPI:
     """Create and return the configured FastAPI application."""
+    docs_url = None if settings.public_mode else "/docs"
+    redoc_url = None if settings.public_mode else "/redoc"
+    openapi_url = None if settings.public_mode else "/openapi.json"
+
     app = FastAPI(
         title="Ghag – KP Public Services Assistant",
         version="1.0.0",
         description="Voice-first government services assistant for Khyber Pakhtunkhwa.",
         lifespan=lifespan,
+        docs_url=docs_url,
+        redoc_url=redoc_url,
+        openapi_url=openapi_url,
     )
 
-    # Enable CORS for external frontends (e.g. Vercel, mobile, external clients)
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+    # In-memory Rate Limiting Middleware (FR-16)
+    @app.middleware("http")
+    async def rate_limit_middleware(request: Request, call_next):
+        path = request.url.path
+        is_rate_limited_path = (
+            path in ("/api/v1/ask", "/api/v1/check")
+            or path.startswith("/api/v1/ask/")
+            or (path.startswith("/api/v1/check/") and not path.startswith("/api/v1/checklist"))
+        )
+        if is_rate_limited_path and os.environ.get("GHAG_SKIP_RATE_LIMIT") != "1" and settings.rate_limit_rpm > 0:
+            forwarded = request.headers.get("x-forwarded-for", "")
+            client_ip = forwarded.split(",")[0].strip() if forwarded else None
+            if not client_ip and request.client:
+                client_ip = request.client.host
+            client_ip = client_ip or "127.0.0.1"
+
+            allowed, retry_after = rate_limiter.check(client_ip, limit=settings.rate_limit_rpm)
+            if not allowed:
+                return JSONResponse(
+                    status_code=429,
+                    content={"detail": RATE_LIMIT_DETAIL, "retry_after": retry_after},
+                    headers={"Retry-After": str(retry_after)},
+                )
+        return await call_next(request)
+
+    # CORS configuration (FR-15: restricted to same origin when PUBLIC_MODE=true)
+    if settings.public_mode:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=[],
+            allow_credentials=False,
+            allow_methods=["GET", "POST"],
+            allow_headers=["*"],
+        )
+    else:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=["*"],
+            allow_credentials=True,
+            allow_methods=["*"],
+            allow_headers=["*"],
+        )
+
+    # Root alias for /dashboard/audit
+    @app.api_route("/dashboard/audit", methods=["GET", "POST"], include_in_schema=False)
+    async def root_dashboard_audit():
+        if settings.public_mode:
+            raise HTTPException(
+                status_code=403,
+                detail="Public demo mode: administrative audit access is disabled",
+            )
+        return {"status": "ok", "audit": "active"}
 
     # Register routers
     from app.routers import ask, check, dashboard, health  # noqa: PLC0415

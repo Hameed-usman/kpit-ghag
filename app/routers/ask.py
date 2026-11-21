@@ -11,6 +11,7 @@ FR-1, FR-2, FR-3, FR-4, FR-5, FR-6, FR-7
 from __future__ import annotations
 
 import logging
+import time
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
@@ -50,6 +51,8 @@ async def ask_endpoint(
     Core voice/text question-answering endpoint.
     Accepts multipart form-data (audio + optional text/lang) or application/json.
     """
+    t0 = time.perf_counter()
+
     # If client submitted application/json, parse JSON body
     content_type = request.headers.get("content-type", "").lower()
     if "application/json" in content_type:
@@ -162,6 +165,7 @@ async def ask_endpoint(
             is_demo=settings.demo_mode,
         )
 
+        latency_ms = max(1, int((time.perf_counter() - t0) * 1000))
         return AskResponse(
             transcript=transcript,
             lang=Lang(response_lang),
@@ -169,6 +173,10 @@ async def ask_endpoint(
             outcome=Outcome.handoff,
             source_id=None,
             source_url=None,
+            last_verified=None,
+            confident=False,
+            handoff_reason="Out of verified government knowledge base scope",
+            latency_ms=latency_ms,
             sms_text=handoff_sms,
             audio_b64=audio_b64,
             tts_available=audio_b64 is not None or audio_bytes is not None,
@@ -176,6 +184,8 @@ async def ask_endpoint(
 
     # 6. Answered Path
     source_url = active_kb.get_source_url(answer_result.source_id)
+    last_verified = active_kb.get_last_verified(answer_result.source_id)
+    latency_ms = max(1, int((time.perf_counter() - t0) * 1000))
 
     # Synthesize speech
     mp3_bytes = await tts.synthesize(answer_result.answer, lang=response_lang)
@@ -198,6 +208,10 @@ async def ask_endpoint(
         outcome=Outcome.answered,
         source_id=answer_result.source_id,
         source_url=source_url,
+        last_verified=last_verified,
+        confident=True,
+        handoff_reason=None,
+        latency_ms=latency_ms,
         sms_text=answer_result.sms,
         audio_b64=audio_b64,
         tts_available=tts_available,

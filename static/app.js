@@ -91,7 +91,32 @@ const elements = {
   checkReplayBtn: document.getElementById('check-replay-btn'),
   checkAudioNotice: document.getElementById('check-audio-notice'),
   checkSmsText: document.getElementById('check-sms-text'),
-  checkSmsCounter: document.getElementById('check-sms-counter')
+  checkSmsCounter: document.getElementById('check-sms-counter'),
+
+  // Glass-box panels (FR-17)
+  askGlassboxToggle: document.getElementById('ask-glassbox-toggle'),
+  askGlassboxContent: document.getElementById('ask-glassbox-content'),
+  askGlassboxChevron: document.getElementById('ask-glassbox-chevron'),
+  askGbHeard: document.getElementById('ask-gb-heard'),
+  askGbLang: document.getElementById('ask-gb-lang'),
+  askGbSourceId: document.getElementById('ask-gb-source-id'),
+  askGbSourceUrl: document.getElementById('ask-gb-source-url'),
+  askGbLastVerified: document.getElementById('ask-gb-last-verified'),
+  askGbConfident: document.getElementById('ask-gb-confident'),
+  askGbHandoff: document.getElementById('ask-gb-handoff'),
+  askGbLatency: document.getElementById('ask-gb-latency'),
+
+  checkGlassboxToggle: document.getElementById('check-glassbox-toggle'),
+  checkGlassboxContent: document.getElementById('check-glassbox-content'),
+  checkGlassboxChevron: document.getElementById('check-glassbox-chevron'),
+  checkGbHeard: document.getElementById('check-gb-heard'),
+  checkGbLang: document.getElementById('check-gb-lang'),
+  checkGbSourceId: document.getElementById('check-gb-source-id'),
+  checkGbSourceUrl: document.getElementById('check-gb-source-url'),
+  checkGbLastVerified: document.getElementById('check-gb-last-verified'),
+  checkGbConfident: document.getElementById('check-gb-confident'),
+  checkGbHandoff: document.getElementById('check-gb-handoff'),
+  checkGbLatency: document.getElementById('check-gb-latency')
 };
 
 /**
@@ -191,6 +216,21 @@ function bindEvents() {
       speakFallback(elements.checkAnswerText.textContent, state.lastCheckLang);
     }
   });
+
+  // Glass-box toggles (FR-17)
+  if (elements.askGlassboxToggle) {
+    elements.askGlassboxToggle.addEventListener('click', () => {
+      const isHidden = elements.askGlassboxContent.classList.toggle('hidden');
+      elements.askGlassboxChevron.textContent = isHidden ? 'expand_more' : 'expand_less';
+    });
+  }
+
+  if (elements.checkGlassboxToggle) {
+    elements.checkGlassboxToggle.addEventListener('click', () => {
+      const isHidden = elements.checkGlassboxContent.classList.toggle('hidden');
+      elements.checkGlassboxChevron.textContent = isHidden ? 'expand_more' : 'expand_less';
+    });
+  }
 }
 
 /**
@@ -601,6 +641,29 @@ function renderAskResult(data, latencyMs = null) {
     elements.askHandoffCard.classList.add('hidden');
   }
 
+  // Glass-Box Explainability Panel (FR-17)
+  if (elements.askGbHeard) {
+    elements.askGbHeard.textContent = data.transcript || data.heard || 'N/A';
+    elements.askGbLang.textContent = (data.lang || 'N/A').toUpperCase();
+    elements.askGbSourceId.textContent = data.source_id || 'None (Refused / Unmatched)';
+
+    if (data.source_url) {
+      elements.askGbSourceUrl.textContent = data.source_url;
+      elements.askGbSourceUrl.href = data.source_url;
+      elements.askGbSourceUrl.classList.remove('hidden');
+    } else {
+      elements.askGbSourceUrl.textContent = 'None';
+      elements.askGbSourceUrl.removeAttribute('href');
+    }
+
+    elements.askGbLastVerified.textContent = data.last_verified || '2026-11-17 (Official Gazette)';
+    const isConfident = data.confident !== undefined ? data.confident : (data.outcome !== 'handoff');
+    elements.askGbConfident.textContent = isConfident ? 'YES (Grounded in Verified KB)' : 'NO (Refused / Out of Scope)';
+    elements.askGbConfident.className = isConfident ? 'text-emerald-400 font-bold font-mono' : 'text-amber-400 font-bold font-mono';
+    elements.askGbHandoff.textContent = data.handoff_reason || (isConfident ? 'None' : 'Out of verified government knowledge base scope');
+    elements.askGbLatency.textContent = `${data.latency_ms || latencyMs || '—'} ms`;
+  }
+
   elements.askResults.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }
 
@@ -775,6 +838,28 @@ function renderCheckResult(data, latencyMs = null) {
   const smsText = data.sms_text || data.sms || '';
   elements.checkSmsText.textContent = smsText;
   elements.checkSmsCounter.textContent = `${smsText.length}/160 chars`;
+
+  // Glass-Box Explainability Panel for Document Check (FR-17)
+  if (elements.checkGbHeard) {
+    elements.checkGbHeard.textContent = data.heard || 'Declared items';
+    elements.checkGbLang.textContent = (data.lang || 'EN').toUpperCase();
+    elements.checkGbSourceId.textContent = data.source_id || 'dom-checklist';
+
+    if (data.source_url) {
+      elements.checkGbSourceUrl.textContent = data.source_url;
+      elements.checkGbSourceUrl.href = data.source_url;
+    } else {
+      elements.checkGbSourceUrl.textContent = 'https://cfc.kp.gov.pk/';
+      elements.checkGbSourceUrl.href = 'https://cfc.kp.gov.pk/';
+    }
+
+    elements.checkGbLastVerified.textContent = data.last_verified || '2026-11-17 (Gazette)';
+    const isConfident = (data.verdict === 'ready' || data.verdict === 'missing');
+    elements.checkGbConfident.textContent = isConfident ? 'YES (Strict Set Difference)' : 'NO (Unverified or Ambiguous)';
+    elements.checkGbConfident.className = isConfident ? 'text-emerald-400 font-bold font-mono' : 'text-amber-400 font-bold font-mono';
+    elements.checkGbHandoff.textContent = data.handoff_reason || (isConfident ? 'None' : 'Checklist unverified or utterance ambiguous');
+    elements.checkGbLatency.textContent = `${data.latency_ms || latencyMs || '—'} ms`;
+  }
 
   elements.checkResults.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 }

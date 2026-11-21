@@ -91,6 +91,31 @@ outcome breakdown, and unanswered pending questions (all anonymised).
 `POST /api/v1/dashboard/approve` lets a council user mark a pending question as
 answered by writing a new KB entry draft.  Requires `ADMIN_TOKEN` env var.
 
+### FR-15  Public Mode Protection (`PUBLIC_MODE`)
+When `PUBLIC_MODE=true` (default `false`):
+- `POST /api/v1/dashboard/approve` and `GET/POST /api/v1/dashboard/audit` (and `/dashboard/audit`) return 403 Forbidden regardless of token.
+- Administrative modifications and seed/admin endpoints are disabled.
+- Interactive documentation (`/docs`, `/redoc`) and API schema (`/openapi.json`) are disabled.
+- CORS is restricted to same-origin.
+
+### FR-16  In-Memory Client Rate Limiting
+- Per client IP in-memory rate limiter with zero external dependencies.
+- Configurable via `RATE_LIMIT_RPM` (default: 10 requests per minute).
+- Enforces max audio payload size (`MAX_AUDIO_BYTES`, default 10 MB) and duration cap (30 s).
+- Exceeding the rate limit returns `429 Too Many Requests` with a friendly multilingual message displayed in the UI.
+
+### FR-17  Glass-Box Explainability Panel
+A collapsible "How Ghag decided" section in the citizen UI for every `/ask` and `/check` result.
+- Displays ONLY fields present in the verified API response:
+  - Heard text (`transcript` / `heard`)
+  - Detected language (`lang`)
+  - Matched source citation (`source_id`, `source_url`, `last_verified`)
+  - Grounding confidence (`confident: true/false` or verdict)
+  - Handoff reason (`handoff_reason` if applicable)
+  - Latency (`latency_ms`)
+- Displays label: *"Try to make Ghag guess: it will refuse if the source doesn't cover it."*
+- Strictly zero invented values.
+
 ## 3. Non-Functional Requirements
 
 | ID | Requirement | Target |
@@ -162,6 +187,21 @@ Then response includes `top_questions`, `language_split`, `outcome_counts`.
 Given a POST with an invalid `admin_token`,
 When `/api/v1/dashboard/approve` is called,
 Then a 401 is returned and no KB entry is written.
+
+**FR-15 / AC-15**
+Given `PUBLIC_MODE=true`,
+When `/api/v1/dashboard/approve` or `/dashboard/audit` is called,
+Then a 403 Forbidden is returned regardless of token, and `/docs` / `/openapi.json` return 404.
+
+**FR-16 / AC-16**
+Given client IP making requests above `RATE_LIMIT_RPM`,
+When the limit is reached,
+Then a 429 Too Many Requests response is returned with a friendly multilingual notice.
+
+**FR-17 / AC-17**
+Given any `/ask` or `/check` response in the web UI,
+When the glass-box accordion is toggled,
+Then it renders heard text, detected language, citation, confidence, handoff reason, and latency matching the exact JSON fields without hallucinated values.
 
 ## 5. Explicit Out-of-Scope (v1)
 

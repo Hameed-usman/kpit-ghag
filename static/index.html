@@ -405,6 +405,36 @@
 
             </div>
 
+            <!-- Glass-Box Explainability Panel (FR-17) -->
+            <div id="ask-glassbox-panel" class="bg-surface-container rounded-2xl border border-secondary/30 overflow-hidden shadow-md">
+              <button type="button" id="ask-glassbox-toggle" class="w-full px-5 py-3.5 bg-surface-container-high/60 hover:bg-surface-container-high flex items-center justify-between gap-3 text-left transition-colors cursor-pointer">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-secondary text-lg">policy</span>
+                  <span class="text-xs font-bold text-white tracking-wide">How Ghag decided (Glass-Box Transparency)</span>
+                </div>
+                <div class="flex items-center gap-2 text-outline text-xs">
+                  <span id="ask-glassbox-status" class="text-[11px] font-mono text-secondary">Decision Trace</span>
+                  <span class="material-symbols-outlined text-base transition-transform" id="ask-glassbox-chevron">expand_more</span>
+                </div>
+              </button>
+              <div id="ask-glassbox-content" class="hidden p-5 flex flex-col gap-3 bg-surface-container-low text-xs border-t border-surface-container-high">
+                <p class="text-[11px] text-tertiary italic flex items-center gap-1.5 font-medium">
+                  <span class="material-symbols-outlined text-sm">psychology</span>
+                  <span>Try to make Ghag guess: it will refuse if the source doesn't cover it.</span>
+                </p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-on-surface-variant pt-2 border-t border-surface-variant">
+                  <div><span class="text-outline font-semibold">Heard Text:</span> <span id="ask-gb-heard" class="text-white font-mono break-words"></span></div>
+                  <div><span class="text-outline font-semibold">Detected Language:</span> <span id="ask-gb-lang" class="text-white font-mono"></span></div>
+                  <div><span class="text-outline font-semibold">Matched Source ID:</span> <span id="ask-gb-source-id" class="text-secondary font-mono"></span></div>
+                  <div><span class="text-outline font-semibold">Source URL:</span> <a id="ask-gb-source-url" href="#" target="_blank" class="text-secondary underline break-all font-mono"></a></div>
+                  <div><span class="text-outline font-semibold">Last Verified:</span> <span id="ask-gb-last-verified" class="text-white font-mono"></span></div>
+                  <div><span class="text-outline font-semibold">Confident:</span> <span id="ask-gb-confident" class="font-mono"></span></div>
+                  <div><span class="text-outline font-semibold">Handoff Reason:</span> <span id="ask-gb-handoff" class="text-amber-300 font-mono"></span></div>
+                  <div><span class="text-outline font-semibold">Pipeline Latency:</span> <span id="ask-gb-latency" class="text-primary font-mono"></span></div>
+                </div>
+              </div>
+            </div>
+
           </div>
 
         </div>
@@ -523,6 +553,36 @@
                   <span id="check-sms-counter" class="font-mono text-outline text-[11px]"></span>
                 </div>
                 <div id="check-sms-text" class="text-xs text-white bg-surface-container-low p-3 rounded-lg leading-relaxed"></div>
+              </div>
+
+              <!-- Glass-Box Explainability Panel for Document Check (FR-17) -->
+              <div id="check-glassbox-panel" class="bg-surface-container-low rounded-xl border border-secondary/30 overflow-hidden shadow-md">
+                <button type="button" id="check-glassbox-toggle" class="w-full px-4 py-3 bg-surface-container-high/60 hover:bg-surface-container-high flex items-center justify-between gap-3 text-left transition-colors cursor-pointer">
+                  <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-secondary text-base">policy</span>
+                    <span class="text-xs font-bold text-white tracking-wide">How Ghag decided (Glass-Box Transparency)</span>
+                  </div>
+                  <div class="flex items-center gap-2 text-outline text-xs">
+                    <span id="check-glassbox-status" class="text-[11px] font-mono text-secondary">Verified Gazette Trace</span>
+                    <span class="material-symbols-outlined text-base transition-transform" id="check-glassbox-chevron">expand_more</span>
+                  </div>
+                </button>
+                <div id="check-glassbox-content" class="hidden p-4 flex flex-col gap-3 bg-surface-container-lowest text-xs border-t border-surface-container-high">
+                  <p class="text-[11px] text-tertiary italic flex items-center gap-1.5 font-medium">
+                    <span class="material-symbols-outlined text-sm">psychology</span>
+                    <span>Try to make Ghag guess: it will refuse if the source doesn't cover it.</span>
+                  </p>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-on-surface-variant pt-2 border-t border-surface-variant">
+                    <div><span class="text-outline font-semibold">Heard Text:</span> <span id="check-gb-heard" class="text-white font-mono break-words"></span></div>
+                    <div><span class="text-outline font-semibold">Detected Language:</span> <span id="check-gb-lang" class="text-white font-mono"></span></div>
+                    <div><span class="text-outline font-semibold">Matched Source ID:</span> <span id="check-gb-source-id" class="text-secondary font-mono"></span></div>
+                    <div><span class="text-outline font-semibold">Source URL:</span> <a id="check-gb-source-url" href="#" target="_blank" class="text-secondary underline break-all font-mono"></a></div>
+                    <div><span class="text-outline font-semibold">Last Verified:</span> <span id="check-gb-last-verified" class="text-white font-mono"></span></div>
+                    <div><span class="text-outline font-semibold">Confident:</span> <span id="check-gb-confident" class="font-mono"></span></div>
+                    <div><span class="text-outline font-semibold">Handoff Reason:</span> <span id="check-gb-handoff" class="text-amber-300 font-mono"></span></div>
+                    <div><span class="text-outline font-semibold">Pipeline Latency:</span> <span id="check-gb-latency" class="text-primary font-mono"></span></div>
+                  </div>
+                </div>
               </div>
 
             </div>

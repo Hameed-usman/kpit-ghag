@@ -29,8 +29,14 @@ async def approve(body: ApproveRequest) -> ApproveResponse:
     """
     Approve a pending unanswered question by writing a KB answer draft.
     Validates admin_token against ADMIN_TOKEN env var.
-    Returns 401 on bad token, 404 if pending_id not found, 422 if URL invalid.
+    Returns 403 in public mode, 401 on bad token, 404 if pending_id not found, 422 if URL invalid.
     """
+    if settings.public_mode:
+        raise HTTPException(
+            status_code=403,
+            detail="Public demo mode: administrative modifications are disabled",
+        )
+
     if not settings.admin_token or body.admin_token != settings.admin_token:
         raise HTTPException(status_code=401, detail="Invalid admin token")
 
@@ -49,4 +55,16 @@ async def approve(body: ApproveRequest) -> ApproveResponse:
         return ApproveResponse(status="approved", kb_entry_id=kb_id)
     except KeyError:
         raise HTTPException(status_code=404, detail=f"Pending question #{body.pending_id} not found")
+
+
+@router.get("/audit")
+@router.post("/audit")
+async def dashboard_audit():
+    """Administrative audit endpoint (FR-15)."""
+    if settings.public_mode:
+        raise HTTPException(
+            status_code=403,
+            detail="Public demo mode: administrative audit access is disabled",
+        )
+    return {"status": "ok", "audit": "active"}
 

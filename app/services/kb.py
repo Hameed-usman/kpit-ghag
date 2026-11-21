@@ -134,6 +134,13 @@ class KnowledgeBase:
         sec = self.sections.get(source_id.strip())
         return sec.source_url if sec else None
 
+    def get_last_verified(self, source_id: Optional[str]) -> Optional[str]:
+        """Retrieve last_verified date string for a verified section."""
+        if not source_id:
+            return None
+        sec = self.sections.get(source_id.strip())
+        return sec.last_verified if sec and sec.last_verified else None
+
     def __len__(self) -> int:
         return len(self.sections)
 

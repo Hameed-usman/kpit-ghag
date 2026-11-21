@@ -26,6 +26,7 @@ def _base_env(tmp_path_factory):
         "TTS_VOICE_EN": "en-US-AriaNeural",
         "GHAG_SKIP_TTS_CHECK": "1",
         "GHAG_SKIP_GROQ_CHECK": "1",
+        "GHAG_SKIP_RATE_LIMIT": "1",
     }
     for k, v in env.items():
         os.environ[k] = v

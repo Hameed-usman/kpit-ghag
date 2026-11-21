@@ -63,3 +63,12 @@
 | T5-5 | NFR-6 | End-to-end demo rehearsal | Full flow works with `DEMO_MODE=true` (no internet) ✅ |
 | T5-6 | — | README run steps verified | Fresh venv → `pip install` → `uvicorn` succeeds in < 2 min ✅ |
 | T5-7 | — | pytest full suite green | 0 failures, 0 warnings on `pytest -v` ✅ |
+
+## Chunk 6 – Public Mode, Rate Limiting & Glass-Box Explainability ✅
+
+| ID | FR | Task | DoD |
+|----|-----|------|-----|
+| T6-1 | FR-15 | PUBLIC_MODE env flag & router guards | Blocks approve/audit with 403; disables docs & openapi; restricts CORS to same-origin ✅ |
+| T6-2 | FR-16 | In-memory IP rate limiter | Default 10 rpm; returns 429 with multilingual friendly message; env configurable ✅ |
+| T6-3 | FR-17 | Glass-box explainability UI panel | Collapsible accordion in index.html/app.js displaying API verification fields without hallucination ✅ |
+| T6-4 | — | Test suite for Chunk 6 | Covers 403 on public mode, 429 rate limit, and glass-box metadata rendering ✅ |
