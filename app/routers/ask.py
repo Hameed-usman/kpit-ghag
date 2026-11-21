@@ -206,7 +206,14 @@ async def ask_endpoint(
 
         # Check if Whisper output is a known acoustic noise hallucination or empty
         clean_tr = transcript.strip().lower()
-        if clean_tr in _NOISE_TOKENS or len(clean_tr) < 3:
+        # Only treat as noise if: empty, pure whitespace, in known noise set, OR
+        # extremely short AND the content is non-word characters only
+        is_noise = (
+            len(clean_tr) == 0
+            or clean_tr in _NOISE_TOKENS
+            or (len(clean_tr) < 2)
+        )
+        if is_noise:
             unclear_msg = _UNCLEAR_AUDIO_MESSAGES.get(detected_lang, _UNCLEAR_AUDIO_MESSAGES["ur"])
             audio_bytes = await tts.synthesize(unclear_msg, lang=detected_lang)
             audio_b64 = tts.to_base64_data_uri(audio_bytes) if audio_bytes else None

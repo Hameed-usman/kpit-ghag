@@ -417,8 +417,9 @@ async function startTwoWayCall() {
   state.isCallMode = true;
   state.callDurationSeconds = 0;
   state.callHistory = [];
+  state.discardRecording = false;
 
-  // Unlock browser audio permissions for this user click gesture
+  // Unlock browser audio for this user-gesture click
   if (elements.askAudioPlayer) {
     elements.askAudioPlayer.play().then(() => elements.askAudioPlayer.pause()).catch(() => {});
   }
@@ -427,45 +428,58 @@ async function startTwoWayCall() {
   if (elements.callActiveBar) elements.callActiveBar.classList.remove('hidden');
   if (elements.callSummaryCard) elements.callSummaryCard.classList.add('hidden');
 
-  updateCallStatus('Connecting & Agent Greeting...');
-  updateCallCaption('1700 Officer (آفیسر)', 'السلام علیکم! خیبر پختونخوا سٹیزن ہیلپ لائن میں خوش آمدید۔ ڈومیسائل کے بارے میں آپ کو کیا معلومات چاہیے؟');
+  // Hide mic button during call — only the "Done Speaking" button controls recording
+  if (elements.askMicBtn) elements.askMicBtn.style.pointerEvents = 'none';
+
+  updateCallStatus('Connecting... Agent greeting in progress');
+  updateCallCaption('1700 آفیسر (Officer)', 'السلام علیکم! خیبر پختونخوا سٹیزن ہیلپ لائن میں خوش آمدید۔ ڈومیسائل کے بارے میں آپ کو کیا معلومات چاہیے؟');
 
   clearInterval(state.callTimerInterval);
   state.callTimerInterval = setInterval(() => {
     state.callDurationSeconds++;
     const mm = String(Math.floor(state.callDurationSeconds / 60)).padStart(2, '0');
     const ss = String(state.callDurationSeconds % 60).padStart(2, '0');
-    if (elements.callTimer) {
-      elements.callTimer.textContent = `${mm}:${ss}`;
-    }
+    if (elements.callTimer) elements.callTimer.textContent = `${mm}:${ss}`;
   }, 1000);
 
+  // Play greeting, then START RECORDING ONLY AFTER GREETING FINISHES
   try {
     const greetingAudio = new Audio(`/api/v1/call/greeting?lang=${lang}`);
     state.currentCallAudio = greetingAudio;
-    greetingAudio.onended = async () => {
-      if (!state.isCallMode) return;
-      state.currentCallAudio = null;
-      updateCallStatus('Agent listening... Speak your question hands-free');
-      updateCallCaption('سائل (Citizen)', 'آپ بولیے (مائیک کھلا ہے)... بولنے کے بعد "میں بول چکا ہوں" دبائیں یا توقف کریں');
-      if (!state.isRecording) {
-        await startRecording('ask');
-      }
-    };
-    await greetingAudio.play();
+
+    await new Promise((resolve, reject) => {
+      greetingAudio.onended = resolve;
+      greetingAudio.onerror = reject;
+      greetingAudio.play().catch(reject);
+    });
+
+    state.currentCallAudio = null;
+    if (!state.isCallMode) return;
+
+    // Now greeting is done — start listening
+    _callStartListening(lang);
+
   } catch (err) {
+    // Fallback: use TTS then wait 4.5s before starting mic
     const greetings = {
-      ur: "السلام علیکم! خیبر پختونخوا سٹیزن ہیلپ لائن میں خوش آمدید۔ ڈومیسائل کے بارے میں آپ کو کیا معلومات چاہیے؟",
-      ps: "سلام علیکم! د خیبر پختونخوا ولسي خدمت مرکز ته ښه راغلاست. د ډومیسائل سند په اړه تاسو ته څه معلومات پکار دي؟",
-      en: "Hello and welcome to Khyber Pakhtunkhwa Citizen Facilitation. How may I assist you with your Domicile Certificate today?"
+      ur: 'السلام علیکم! خیبر پختونخوا سٹیزن ہیلپ لائن میں خوش آمدید۔ ڈومیسائل کے بارے میں آپ کو کیا معلومات چاہیے؟',
+      ps: 'سلام علیکم! د خیبر پختونخوا ولسي خدمت مرکز ته ښه راغلاست. د ډومیسائل سند په اړه تاسو ته څه معلومات پکار دي؟',
+      en: 'Hello and welcome to Khyber Pakhtunkhwa Citizen Facilitation. How may I assist you with your Domicile Certificate today?'
     };
     speakFallback(greetings[lang] || greetings.ur, lang);
-    setTimeout(async () => {
+    setTimeout(() => {
       if (!state.isCallMode) return;
-      updateCallStatus('Agent listening... Speak your question hands-free');
-      updateCallCaption('سائل (Citizen)', 'آپ بولیے (مائیک کھلا ہے)... بولنے کے بعد "میں بول چکا ہوں" دبائیں یا توقف کریں');
-      if (!state.isRecording) await startRecording('ask');
-    }, 4200);
+      _callStartListening(lang);
+    }, 4500);
+  }
+}
+
+/** Internal: transition call UI into "listening" mode and start mic */
+async function _callStartListening(lang) {
+  updateCallStatus('🎙️ Mic is open — Speak your question now');
+  updateCallCaption('سائل (Citizen)', 'آپ بولیے... سوال مکمل ہونے پر "بول چکا ہوں" دبائیں');
+  if (!state.isRecording) {
+    await startRecording('ask');
   }
 }
 
@@ -534,6 +548,8 @@ async function endTwoWayCall() {
   if (elements.callActiveBar) elements.callActiveBar.classList.add('hidden');
   if (elements.askCallAgentBtn) elements.askCallAgentBtn.classList.remove('hidden');
   if (elements.askRecordingStatus) elements.askRecordingStatus.classList.add('hidden');
+  // Re-enable the standalone mic button after call ends
+  if (elements.askMicBtn) elements.askMicBtn.style.pointerEvents = '';
 
   renderCallSummary();
 }
@@ -658,6 +674,9 @@ async function startRecording(mode) {
       if (elements.callDoneSpeakingBtn) elements.callDoneSpeakingBtn.classList.add('hidden');
       if (state.recordingMode === 'ask') {
         if (state.isCallMode) {
+          // Show "searching records" immediately so user knows their voice was heard
+          updateCallStatus('⏳ Searching official records...');
+          updateCallCaption('1700 آفیسر (Officer)', 'جی ضرور — میں ابھی آپ کے لیے سرکاری دستاویزات میں دیکھتا ہوں...');
           announceProcessing();
         }
         submitAskAudio(audioBlob);
@@ -949,24 +968,38 @@ function renderAskResult(data, latencyMs = null) {
       lang: lang,
       confident: (data.confident !== false && data.outcome !== 'handoff')
     });
-    updateCallStatus('Agent speaking verified answer...');
-    updateCallCaption('1700 Officer (آفیسر)', data.answer || '');
 
+    const isVerified = (data.confident !== false && data.outcome !== 'handoff');
+    const statusMsg = isVerified
+      ? '✅ Verified official answer'
+      : '📋 Citizen facilitation guidance';
+
+    updateCallStatus(statusMsg);
+    updateCallCaption('1700 آفیسر (Officer)', data.answer || '');
+
+    // After answer audio finishes → restart mic automatically for next question
     const onAnswerFinished = () => {
       if (!state.isCallMode) return;
-      updateCallStatus('Agent listening... Speak next question hands-free');
-      updateCallCaption('سائل (Citizen)', 'آپ بولیے (اگلا سوال)... یا کال ختم کرنے کے لیے نیچے بٹن دبائیں');
+      updateCallStatus('🎙️ Mic is open — Speak your next question');
+      updateCallCaption('سائل (Citizen)', 'آپ اگلا سوال بولیے... یا کال ختم کرنے کے لیے "End Call" دبائیں');
+      // 1.5s pause so agent audio fully stops before mic opens
       setTimeout(async () => {
         if (state.isCallMode && !state.isRecording) {
           await startRecording('ask');
         }
-      }, 1000);
+      }, 1500);
     };
 
+    // Wire up audio-end event — prefer the HTML audio player, fallback to timeout
     if (validAudioSrc && elements.askAudioPlayer) {
+      // Remove any old handler first to avoid stacking
+      elements.askAudioPlayer.onended = null;
       elements.askAudioPlayer.onended = onAnswerFinished;
     } else {
-      setTimeout(onAnswerFinished, 4500);
+      // No audio (TTS unavailable): estimate speech duration from character count
+      const charCount = (data.answer || '').length;
+      const estimatedMs = Math.max(3000, charCount * 60); // ~60ms per char
+      setTimeout(onAnswerFinished, estimatedMs);
     }
   }
 
