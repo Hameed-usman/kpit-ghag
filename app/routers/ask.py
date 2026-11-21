@@ -36,6 +36,18 @@ HANDOFF_SMS: dict[str, str] = {
     "en": "Info unavailable in verified KB. Contact DC Office or visit cfc.kp.gov.pk.",
 }
 
+_NOISE_TOKENS = {
+    "موسیقی", "[موسیقی]", "music", "[music]", "music.", "applause", "[applause]",
+    "خاموشی", "[خاموشی]", "sound", "...", "subtitles by", "amara.org",
+    "you", "thank you", "thanks for watching",
+}
+
+_UNCLEAR_AUDIO_MESSAGES: dict[str, str] = {
+    "ur": "معذرت، آپ کی آواز صاف نہیں سنی جا سکی۔ براہ کرم مائیک کے قریب ہو کر اپنا سوال دوبارہ بولیے۔",
+    "ps": "بخښنه غواړم، ستاسو غږ صفا ونه اورېدل شو. مهرباني وکړئ خپله پوښتنه بیا تکرار کړئ.",
+    "en": "Pardon me, I could not hear your question clearly. Please speak closer to the microphone and ask again.",
+}
+
 _ALLOWED_AUDIO_EXTENSIONS = {"wav", "webm", "mp3", "ogg", "m4a", "flac"}
 
 _GREETING_TEXTS: dict[str, str] = {
@@ -181,6 +193,29 @@ async def ask_endpoint(
                 ) from exc
             transcript = "ڈومیسائل سرٹیفکیٹ کے لیے کیا کرنا ہوگا؟"
             detected_lang = effective_hint or "ur"
+
+        # Check if Whisper output is a known acoustic noise hallucination or empty
+        clean_tr = transcript.strip().lower()
+        if clean_tr in _NOISE_TOKENS or len(clean_tr) < 3:
+            unclear_msg = _UNCLEAR_AUDIO_MESSAGES.get(detected_lang, _UNCLEAR_AUDIO_MESSAGES["ur"])
+            audio_bytes = await tts.synthesize(unclear_msg, lang=detected_lang)
+            audio_b64 = tts.to_base64_data_uri(audio_bytes) if audio_bytes else None
+            latency_ms = max(1, int((time.perf_counter() - t0) * 1000))
+            return AskResponse(
+                transcript=transcript or "Unclear audio",
+                lang=Lang(detected_lang),
+                answer=unclear_msg,
+                outcome=Outcome.handoff,
+                source_id=None,
+                source_url=None,
+                last_verified=None,
+                confident=False,
+                handoff_reason="Audio signal unclear / ambient noise detected",
+                latency_ms=latency_ms,
+                sms_text="آواز صاف نہ ہونے کی وجہ سے سوال نہیں سنا گیا۔ دوبارہ رابطہ کریں۔",
+                audio_b64=audio_b64,
+                tts_available=audio_b64 is not None,
+            )
     else:
         # Text Path
         transcript = (text or "").strip()
