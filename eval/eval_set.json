@@ -1,0 +1,262 @@
+[
+  {
+    "id": "ASK-01",
+    "endpoint": "/api/v1/ask",
+    "lang": "en",
+    "input": "Who is the issuing authority for domicile certificates in KP?",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-authority",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-02",
+    "endpoint": "/api/v1/ask",
+    "lang": "en",
+    "input": "Where can I apply for a domicile certificate online?",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-channels",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-03",
+    "endpoint": "/api/v1/ask",
+    "lang": "en",
+    "input": "What are the official steps to apply for a domicile certificate?",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-procedure",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-04",
+    "endpoint": "/api/v1/ask",
+    "lang": "en",
+    "input": "How can I verify an existing domicile certificate online?",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-tracking",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-05",
+    "endpoint": "/api/v1/ask",
+    "lang": "en",
+    "input": "Can I use the KP Citizen's Portal mobile app to apply?",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-channels",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-06",
+    "endpoint": "/api/v1/ask",
+    "lang": "ur",
+    "input": "ڈومیسائل سرٹیفکیٹ جاری کرنے کا مجاز ادارہ کون سا ہے؟",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-authority",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-07",
+    "endpoint": "/api/v1/ask",
+    "lang": "ur",
+    "input": "ڈومیسائل سرٹیفکیٹ کی درخواست کے سرکاری ذرائع کیا ہیں؟",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-channels",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-08",
+    "endpoint": "/api/v1/ask",
+    "lang": "ur",
+    "input": "ڈومیسائل کے لیے درخواست دینے کا طریقہ کار کیا ہے؟",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-procedure",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-09",
+    "endpoint": "/api/v1/ask",
+    "lang": "ur",
+    "input": "ڈومیسائل سرٹیفکیٹ کی تصدیق کیسے کی جاتی ہے؟",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-tracking",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-10",
+    "endpoint": "/api/v1/ask",
+    "lang": "ur",
+    "input": "کیا میں ضلع کے ڈپٹی کمشنر آفس جا کر درخواست جمع کروا سکتا ہوں؟",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-channels",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-11",
+    "endpoint": "/api/v1/ask",
+    "lang": "ps",
+    "input": "په خیبر پښتونخوا کې د ډومیسائل سرټیفیکیټ د اجرا اداره کومه ده؟",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-authority",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-12",
+    "endpoint": "/api/v1/ask",
+    "lang": "ps",
+    "input": "زه څنګه کولی شم د ډومیسائل غوښتنلیک د انټرنیټ له لارې واستوم؟",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-channels",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-13",
+    "endpoint": "/api/v1/ask",
+    "lang": "ps",
+    "input": "د ډومیسائل سرټیفیکیټ ترلاسه کولو مرحلې څه دي؟",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-procedure",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-14",
+    "endpoint": "/api/v1/ask",
+    "lang": "ps",
+    "input": "زه څنګه خپل ډومیسائل تایید کولی شم؟",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-tracking",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-15",
+    "endpoint": "/api/v1/ask",
+    "lang": "en",
+    "input": "What should I keep with me after submitting my domicile application?",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-important-notes",
+    "notes": "Verified in KB"
+  },
+  {
+    "id": "ASK-16",
+    "endpoint": "/api/v1/ask",
+    "lang": "en",
+    "input": "How can I get an international passport in Peshawar?",
+    "expected_outcome": "handoff",
+    "expected_source_id": null,
+    "notes": "Out-of-KB service (Passport)"
+  },
+  {
+    "id": "ASK-17",
+    "endpoint": "/api/v1/ask",
+    "lang": "en",
+    "input": "What is the official government fee for a KP domicile certificate?",
+    "expected_outcome": "handoff",
+    "expected_source_id": null,
+    "notes": "Out-of-KB / TODO unverified item (Fees)"
+  },
+  {
+    "id": "ASK-18",
+    "endpoint": "/api/v1/ask",
+    "lang": "ur",
+    "input": "ڈرائیونگ لائسنس بنوانے کے لیے کیا شرائط ہیں؟",
+    "expected_outcome": "handoff",
+    "expected_source_id": null,
+    "notes": "Out-of-KB service (Driving License)"
+  },
+  {
+    "id": "ASK-19",
+    "endpoint": "/api/v1/ask",
+    "lang": "ps",
+    "input": "د نادرا د واده سند یا نکاح نامې ثبتولو طریقه څه ده؟",
+    "expected_outcome": "handoff",
+    "expected_source_id": null,
+    "notes": "Out-of-KB service (Marriage cert)"
+  },
+  {
+    "id": "ASK-20",
+    "endpoint": "/api/v1/ask",
+    "lang": "en",
+    "input": "How do I register a police FIR in KP?",
+    "expected_outcome": "handoff",
+    "expected_source_id": null,
+    "notes": "Out-of-KB service (Police FIR)"
+  },
+  {
+    "id": "CHK-01",
+    "endpoint": "/api/v1/check",
+    "lang": "en",
+    "input": "I have my CNIC, my father's CNIC, passport photographs, residence proof, and affidavit.",
+    "expected_verdict": "ready",
+    "notes": "All required documents present"
+  },
+  {
+    "id": "CHK-02",
+    "endpoint": "/api/v1/check",
+    "lang": "en",
+    "input": "I have my CNIC and passport photos only.",
+    "expected_verdict": "missing",
+    "notes": "Missing parent CNIC, residence proof, affidavit"
+  },
+  {
+    "id": "CHK-03",
+    "endpoint": "/api/v1/check",
+    "lang": "en",
+    "input": "I have my CNIC, parent CNIC, photos, and affidavit, but no residence utility bill.",
+    "expected_verdict": "missing",
+    "notes": "Single missing item (residence proof)"
+  },
+  {
+    "id": "CHK-04",
+    "endpoint": "/api/v1/check",
+    "lang": "en",
+    "input": "I have some papers and maybe a folder with some things inside.",
+    "expected_verdict": "unsure",
+    "notes": "Ambiguous/unclear input"
+  },
+  {
+    "id": "CHK-05",
+    "endpoint": "/api/v1/check",
+    "lang": "ur",
+    "input": "میرے پاس اپنا شناختی کارڈ، والد کا شناختی کارڈ، تصاویر، رہائشی بل اور بیان حلفی سب موجود ہیں۔",
+    "expected_verdict": "ready",
+    "notes": "Urdu all required documents"
+  },
+  {
+    "id": "CHK-06",
+    "endpoint": "/api/v1/check",
+    "lang": "ur",
+    "input": "میرے پاس صرف اپنا شناختی کارڈ اور دو تصاویر ہیں۔",
+    "expected_verdict": "missing",
+    "notes": "Urdu missing documents"
+  },
+  {
+    "id": "CHK-07",
+    "endpoint": "/api/v1/check",
+    "lang": "ps",
+    "input": "زما سره زما تذکره، د پلار تذکره، عکسونه او د کور بېل شته خو بیان حلفي نلرم.",
+    "expected_verdict": "missing",
+    "notes": "Pashto missing affidavit"
+  },
+  {
+    "id": "CHK-08",
+    "endpoint": "/api/v1/check",
+    "lang": "ps",
+    "input": "زما سره ټول اړین اسناد شته لکه زما CNIC، د پلار CNIC، عکسونه، د کور ثبوت او حلف نامه.",
+    "expected_verdict": "ready",
+    "notes": "Pashto ready"
+  },
+  {
+    "id": "CHK-09",
+    "endpoint": "/api/v1/check",
+    "lang": "en",
+    "input": "Check my documents: only have an affidavit.",
+    "expected_verdict": "missing",
+    "notes": "Only 1 document"
+  },
+  {
+    "id": "CHK-10",
+    "endpoint": "/api/v1/check",
+    "lang": "en",
+    "input": "What documents are required?",
+    "expected_verdict": "unsure",
+    "notes": "Inquiry rather than statement of possession"
+  }
+]

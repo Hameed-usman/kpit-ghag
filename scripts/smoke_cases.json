@@ -1,0 +1,60 @@
+[
+  {
+    "id": "health",
+    "endpoint": "/api/v1/health",
+    "type": "health",
+    "lang": "en",
+    "expected_status": 200
+  },
+  {
+    "id": "ask_urdu_docs",
+    "endpoint": "/api/v1/ask",
+    "type": "ask",
+    "lang": "ur",
+    "text": "ڈومیسائل بنوانے کے لیے کون سے سرکاری ذرائع ہیں؟",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-channels"
+  },
+  {
+    "id": "ask_english_docs",
+    "endpoint": "/api/v1/ask",
+    "type": "ask",
+    "lang": "en",
+    "text": "Where can I apply for a domicile certificate?",
+    "expected_outcome": "answered",
+    "expected_source_id": "dom-channels"
+  },
+  {
+    "id": "ask_outofkb_handoff",
+    "endpoint": "/api/v1/ask",
+    "type": "ask",
+    "lang": "en",
+    "text": "How do I renew my international passport?",
+    "expected_outcome": "handoff",
+    "expected_source_id": null
+  },
+  {
+    "id": "check_all_documents",
+    "endpoint": "/api/v1/check",
+    "type": "check",
+    "lang": "en",
+    "text": "I have my CNIC, my father's CNIC, passport photographs, proof of residence, and affidavit.",
+    "expected_verdict": "ready"
+  },
+  {
+    "id": "check_one_missing",
+    "endpoint": "/api/v1/check",
+    "type": "check",
+    "lang": "en",
+    "text": "I have my CNIC, parent CNIC, photos, and affidavit, but no residence utility bill.",
+    "expected_verdict": "missing"
+  },
+  {
+    "id": "check_ambiguous",
+    "endpoint": "/api/v1/check",
+    "type": "check",
+    "lang": "en",
+    "text": "I have some papers and something in my bag.",
+    "expected_verdict": "unsure"
+  }
+]

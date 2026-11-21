@@ -1,0 +1,40 @@
+{
+  "_comment": "Offline demo fixture for DEMO_MODE=true. Served when Groq API is unreachable. Populate with real answers after KB is verified.",
+  "ask": {
+    "default": {
+      "transcript": "How do I apply for a domicile certificate?",
+      "lang": "en",
+      "answer": "You can apply for a Domicile Certificate through the KP Citizens Facilitation Portal at https://cfc.kp.gov.pk/, the KP Citizen's Portal mobile app, or at a District Citizen Information Centre at your local DC office.",
+      "outcome": "answered",
+      "source_id": "dom-channels",
+      "source_url": "https://cfc.kp.gov.pk/",
+      "sms_text": "Apply for KP Domicile at cfc.kp.gov.pk, mobile app, or DC office. Track via application ID.",
+      "audio_b64": null,
+      "tts_available": false
+    },
+    "ur": {
+      "transcript": "ڈومیسائل سرٹیفکیٹ کے لیے کہاں درخواست دی جائے؟",
+      "lang": "ur",
+      "answer": "آپ خیبرپختونخوا سٹیزنز فسیلیٹیشن پورٹل cfc.kp.gov.pk، موبائل ایپ، یا ڈی سی آفس کے ذریعے درخواست دے سکتے ہیں۔",
+      "outcome": "answered",
+      "source_id": "dom-channels",
+      "source_url": "https://cfc.kp.gov.pk/",
+      "sms_text": "KP ڈومیسائل: cfc.kp.gov.pk یا ڈی سی آفس سے درخواست دیں۔",
+      "audio_b64": null,
+      "tts_available": false
+    }
+  },
+  "check": {
+    "default": {
+      "have": [{"id": "D1", "title": "Applicant CNIC / Form-B"}],
+      "missing": [
+        {"id": "D3", "title": "Passport-size photographs"},
+        {"id": "D4", "title": "Proof of residence"},
+        {"id": "D5", "title": "Affidavit"}
+      ],
+      "summary": "You have 1 of the required documents. You are still missing 3 documents.",
+      "source_id": "dom-checklist",
+      "source_url": "https://cfc.kp.gov.pk/"
+    }
+  }
+}

@@ -1,0 +1,32 @@
+# Secrets — NEVER commit these
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+
+# SQLite database (runtime artifact)
+*.db
+*.db-shm
+*.db-wal
+
+# Audio (never stored per P-4, but just in case)
+*.wav
+*.webm
+*.mp3
+*.ogg
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
