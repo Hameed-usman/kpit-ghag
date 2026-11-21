@@ -93,8 +93,8 @@ def parse_checklist_from_text(text: str) -> Tuple[List[ChecklistItem], bool]:
     Returns (items, is_verified).
     is_verified is False if the section is missing, empty, or ANY row has TODO(verified-source).
     """
-    # Locate CHECKLIST section
-    checklist_match = re.search(r"## CHECKLIST(.*?)(?:---|\Z)", text, flags=re.DOTALL)
+    # Locate CHECKLIST section (delimited by standalone '---' on its own line or EOF)
+    checklist_match = re.search(r"## CHECKLIST(.*?)(?:(?:\n---\s*(?:\n|\Z))|\Z)", text, flags=re.DOTALL)
     if not checklist_match:
         return [], False
 

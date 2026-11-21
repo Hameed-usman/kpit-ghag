@@ -26,7 +26,7 @@ log = logging.getLogger(__name__)
 
 FALLBACK_VOICES: dict[str, list[str]] = {
     "ps": [settings.tts_voice_ps, "ps-AF-GulNawazNeural", "ur-PK-AsadNeural"],
-    "ur": [settings.tts_voice_ur, "ur-PK-UzmaNeural"],
+    "ur": [settings.tts_voice_ur, "ur-PK-UzmaNeural", "ur-IN-SalmanNeural", "ur-IN-GulNeural", "en-US-AriaNeural"],
     "en": [settings.tts_voice_en, "en-US-JennyNeural"],
 }
 

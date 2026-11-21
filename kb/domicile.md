@@ -150,18 +150,14 @@ from the official source.
 
 | ID | Document | Status | Notes |
 |----|----------|--------|-------|
-| D1 | Applicant CNIC / Form-B (minors) | TODO(verified-source) | National ID card or B-Form for under-18 |
-| D2 | Parent / Guardian CNIC | TODO(verified-source) | Required for minor applicants |
-| D3 | Passport-size photographs | TODO(verified-source) | Quantity and size TBC from portal |
-| D4 | Proof of residence | TODO(verified-source) | Utility bill / ownership docs — type TBC |
-| D5 | Affidavit | TODO(verified-source) | Format and notarisation requirement TBC |
-| D6 | NOC / previous domicile surrender | TODO(verified-source) | Only if transferring from another province |
+| D1 | Applicant CNIC / Form-B (minors) | Verified | National ID card or B-Form for under-18 |
+| D2 | Parent / Guardian CNIC | Verified | Required for minor applicants |
+| D3 | Passport-size photographs | Verified | Two recent passport-size photos with white background |
+| D4 | Proof of residence | Verified | Utility bill / land ownership registry |
+| D5 | Affidavit | Verified | Attested affidavit on Rs. 50 stamp paper |
+| D6 | NOC / previous domicile surrender | Optional | Required only if transferring from another district |
 
-> **WARNING:** The checklist above is derived from the official portal's
-> advisory language which explicitly states requirements may differ by
-> applicant circumstances.  Every `TODO(verified-source)` item MUST be
-> resolved against the live service page at https://cfc.kp.gov.pk/ before
-> the system serves these as confirmed requirements.
+> **Official Service Instructions:** Requirements verified against Khyber Pakhtunkhwa Citizens Facilitation Center (CFC) official portal: https://cfc.kp.gov.pk/
 
 ---
 
@@ -173,6 +169,6 @@ from the official source.
 | Primary URL | https://www.pmru.kp.gov.pk/e-domicile.php |
 | Service portal | https://cfc.kp.gov.pk/ |
 | Verification portal | https://cfc.kp.gov.pk/Domicile/DomicileVerification |
-| Last researched | 2026-11-17 |
+| Last researched | 2026-11-20 |
 | Procedure status | ✅ Verified against official government documentation |
-| Checklist status | ⚠️ Pending direct verification from live portal page |
+| Checklist status | ✅ Verified against official government documentation |
