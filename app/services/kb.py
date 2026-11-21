@@ -131,13 +131,34 @@ class KnowledgeBase:
         """Attempt to recover verified section ID if LLM omitted it for a grounded inquiry."""
         text = f"{question} {answer}".lower()
         keyword_maps = [
-            ("dom-fees", ["فیس", "fee", "fees", "500", "rupees", "روپے", "چالان", "challan", "کتنی ہے"]),
-            ("dom-timeline", ["دن", "time", "timeline", "کتنے دن", "7 دن", "سات دن", "7 days", "days", "وقت"]),
-            ("dom-requirements", ["کاغذات", "دستاویزات", "documents", "requirements", "شناختی کارڈ", "cnic", "تصاویر", "photos", "فارم بی"]),
-            ("dom-procedure", ["طریقہ", "procedure", "process", "اپلائی", "apply", "مراحل", "steps"]),
-            ("dom-eligibility", ["اہلیت", "eligibility", "کون بنوا سکتا", "عمر", "age", "نابالغ", "minor"]),
-            ("dom-tracking", ["ٹریکنگ", "track", "tracking", "verification", "تصدیق"]),
-            ("dom-channels", ["کہاں", "where", "portal", "پورٹل", "دفتر", "مرکز", "office"]),
+            ("dom-fees", [
+                "فیس", "fee", "fees", "500", "rupees", "روپے", "چالان", "challan", "کتنی ہے",
+                "پیسې", "معاف", "free", "cost", "price",
+            ]),
+            ("dom-timeline", [
+                "دن", "time", "timeline", "کتنے دن", "7 دن", "سات دن", "7 days", "days", "وقت",
+                "ورځې", "موده", "duration", "how long",
+            ]),
+            ("dom-requirements", [
+                "کاغذات", "دستاویزات", "documents", "requirements", "شناختی کارڈ", "cnic",
+                "تصاویر", "photos", "فارم بی", "form b", "اسناد", "کاغذونه", "بیاڼ", "affidavit",
+                "utility bill", "بجلی کا بل", "درکار",
+            ]),
+            ("dom-procedure", [
+                "طریقہ", "procedure", "process", "اپلائی", "apply", "مراحل", "steps",
+                "طریقه", "څنګه", "کیسے", "طریقہ کار",
+            ]),
+            ("dom-eligibility", [
+                "اہلیت", "eligibility", "کون بنوا سکتا", "عمر", "age", "نابالغ", "minor",
+                "اہل", "شرائط", "criteria",
+            ]),
+            ("dom-tracking", [
+                "ٹریکنگ", "track", "tracking", "verification", "تصدیق", "status", "چیک",
+            ]),
+            ("dom-channels", [
+                "کہاں", "where", "portal", "پورٹل", "دفتر", "مرکز", "office",
+                "چیرته", "کدھر", "cfc", "dc office",
+            ]),
         ]
         for sec_id, keywords in keyword_maps:
             if sec_id in self.sections:

@@ -38,8 +38,18 @@ HANDOFF_SMS: dict[str, str] = {
 
 _NOISE_TOKENS = {
     "موسیقی", "[موسیقی]", "music", "[music]", "music.", "applause", "[applause]",
-    "خاموشی", "[خاموشی]", "sound", "...", "subtitles by", "amara.org",
-    "you", "thank you", "thanks for watching",
+    "خاموشی", "[خاموشی]", "sound", "...", "subtitles by", "amara.org", "thanks for watching",
+}
+
+_GREETING_TRIGGERS = {
+    "سلام", "السلام علیکم", "اسلام علیکم", "ہیلو", "hello", "hi", "hey",
+    "good morning", "good afternoon", "good evening", "سلامونه", "پخیر",
+    "aao", "aoa", "assalam o alaikum", "assalam alaikum", "salam",
+}
+
+_COURTESY_TRIGGERS = {
+    "شکریہ", "شکریہ۔", "بہت شکریہ", "مہربانی", "تھینک یو", "thank you", "thanks",
+    "thank you very much", "مننه", "ډیره مننه", "thanks a lot",
 }
 
 _UNCLEAR_AUDIO_MESSAGES: dict[str, str] = {
@@ -224,6 +234,88 @@ async def ask_endpoint(
 
     # 3. Grounded LLM Generation
     active_kb = kb.get_kb()
+    normalized_q = transcript.strip().lower().rstrip(".!؟? ")
+
+    # Polite Greeting check
+    if normalized_q in _GREETING_TRIGGERS:
+        greet_texts = {
+            "ur": "وعلیکم السلام! خیبر پختونخوا سٹیزن ہیلپ لائن میں خوش آمدید۔ ڈومیسائل کے 500 روپے سرکاری فیس، درکار کاغذات، یا 7 روزہ پروسیسنگ کے بارے میں آپ کیا جاننا چاہتے ہیں؟",
+            "ps": "سلام علیکم! د خیبر پختونخوا ولسي خدمت مرکز ته ښه راغلاست. د ډومیسائل 500 روپۍ فیس، پکار اسنادو یا طریقی په اړه څه پوښتنه لرئ؟",
+            "en": "Hello and welcome to Khyber Pakhtunkhwa Citizen Facilitation. How may I assist you with the KP Domicile Certificate, Rs. 500 official fee, required documents, or the 7-day timeline?",
+        }
+        greet_sms = {
+            "ur": "KP ڈومیسائل معلومات: فیس 500 روپے، 7 دن کی مدت، DC آفس یا cfc.kp.gov.pk پر دستیاب۔",
+            "ps": "KP ډومیسائل: 500 روپۍ فیس، 7 ورځې موده، DC دفتر یا cfc.kp.gov.pk.",
+            "en": "KP Domicile: Rs. 500 fee, 7-day timeline. Visit cfc.kp.gov.pk or DC Office.",
+        }
+        ans_text = greet_texts.get(detected_lang, greet_texts["ur"])
+        sms_text = greet_sms.get(detected_lang, greet_sms["ur"])
+        audio_bytes = await tts.synthesize(ans_text, lang=detected_lang)
+        audio_b64 = tts.to_base64_data_uri(audio_bytes) if audio_bytes else None
+        latency_ms = max(1, int((time.perf_counter() - t0) * 1000))
+        logstore.log_query(
+            lang=detected_lang,
+            source_id="dom-channels",
+            handled="answered",
+            question_text=transcript,
+            is_demo=settings.demo_mode,
+        )
+        return AskResponse(
+            transcript=transcript,
+            lang=Lang(detected_lang),
+            answer=ans_text,
+            outcome=Outcome.answered,
+            source_id="dom-channels",
+            source_url=active_kb.get_source_url("dom-channels"),
+            last_verified=active_kb.get_last_verified("dom-channels"),
+            confident=True,
+            handoff_reason=None,
+            latency_ms=latency_ms,
+            sms_text=sms_text,
+            audio_b64=audio_b64,
+            tts_available=audio_b64 is not None,
+        )
+
+    # Polite Courtesy / Thank-you check
+    if normalized_q in _COURTESY_TRIGGERS:
+        courtesy_texts = {
+            "ur": "آپ کا خیر مقدم ہے! اگر آپ کو ڈومیسائل سرٹیفکیٹ، درکار کاغذات، یا درخواست کے طریقہ کار کے بارے میں مزید معلومات چاہیے ہوں، تو میں حاضر ہوں۔",
+            "ps": "ستاسو ډیره مننه! که تاسو د ډومیسائل سند، اسنادو یا فیس په اړه نور معلومات غواړئ، نو زه ستاسو په خدمت کې یم.",
+            "en": "You are welcome! Please let me know if you need any additional information regarding the KP Domicile Certificate, required documents, or application procedure.",
+        }
+        courtesy_sms = {
+            "ur": "حکومت خیبر پختونخوا سٹیزن پورٹل سے رابطہ کرنے کا شکریہ۔",
+            "ps": "د خیبر پختونخوا ولسي خدمت مرکز سره د رابطې لپاره مننه.",
+            "en": "Thank you for contacting Khyber Pakhtunkhwa Citizen Facilitation.",
+        }
+        ans_text = courtesy_texts.get(detected_lang, courtesy_texts["ur"])
+        sms_text = courtesy_sms.get(detected_lang, courtesy_sms["ur"])
+        audio_bytes = await tts.synthesize(ans_text, lang=detected_lang)
+        audio_b64 = tts.to_base64_data_uri(audio_bytes) if audio_bytes else None
+        latency_ms = max(1, int((time.perf_counter() - t0) * 1000))
+        logstore.log_query(
+            lang=detected_lang,
+            source_id="dom-channels",
+            handled="answered",
+            question_text=transcript,
+            is_demo=settings.demo_mode,
+        )
+        return AskResponse(
+            transcript=transcript,
+            lang=Lang(detected_lang),
+            answer=ans_text,
+            outcome=Outcome.answered,
+            source_id="dom-channels",
+            source_url=active_kb.get_source_url("dom-channels"),
+            last_verified=active_kb.get_last_verified("dom-channels"),
+            confident=True,
+            handoff_reason=None,
+            latency_ms=latency_ms,
+            sms_text=sms_text,
+            audio_b64=audio_b64,
+            tts_available=audio_b64 is not None,
+        )
+
     try:
         answer_result = await llm.grounded_answer(
             question=transcript,

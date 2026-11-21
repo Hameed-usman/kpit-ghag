@@ -476,7 +476,7 @@ function updateCallStatus(msg) {
   if (elements.askRecordingStatus) {
     elements.askRecordingStatus.classList.remove('hidden');
     const statusSpan = elements.askRecordingStatus.querySelector('span:last-child');
-    if (statusSpan) statusSpan.textContent = `📞 1700 Call: ${msg}`;
+    if (statusSpan) statusSpan.textContent = `📞 1700 Call Active (${state.langHint || 'Auto'})`;
   }
 }
 
@@ -670,8 +670,8 @@ async function startRecording(mode) {
     state.isRecording = true;
     state.recordSeconds = 0;
 
-    // In call mode, keep speech prompt to 12s max for faster multi-turn cadence
-    const effectiveMaxSeconds = state.isCallMode ? 12 : state.maxRecordSeconds;
+    // In call mode, allow full 30s max for comfortable natural speech cadence
+    const effectiveMaxSeconds = state.isCallMode ? 30 : state.maxRecordSeconds;
 
     // UI Updates
     const langNames = {
@@ -686,7 +686,7 @@ async function startRecording(mode) {
       elements.askMicPing1.classList.remove('hidden');
       elements.askMicPing2.classList.remove('hidden');
       elements.askRecordingStatus.classList.remove('hidden');
-      elements.askRecordingStatus.querySelector('span:last-child').textContent = `Listening in ${activeLangLabel}... (Max ${effectiveMaxSeconds}s)`;
+      elements.askRecordingStatus.querySelector('span:last-child').textContent = `Listening (${activeLangLabel}) • Max ${effectiveMaxSeconds}s`;
       elements.askTimer.textContent = '00:00';
       if (state.isCallMode) {
         if (elements.callDoneSpeakingBtn) elements.callDoneSpeakingBtn.classList.remove('hidden');
@@ -837,8 +837,6 @@ async function submitAskAudio(blob) {
     formData.append('audio', blob, filename);
     if (state.langHint && state.langHint !== 'auto') {
       formData.append('lang_hint', state.langHint);
-    } else {
-      formData.append('lang_hint', 'ur');
     }
 
     const res = await fetch('/api/v1/ask', {
@@ -1072,8 +1070,6 @@ async function submitCheckAudio(blob) {
     formData.append('audio', blob, filename);
     if (state.langHint && state.langHint !== 'auto') {
       formData.append('lang_hint', state.langHint);
-    } else {
-      formData.append('lang_hint', 'ur');
     }
 
     const res = await fetch('/api/v1/check', {
