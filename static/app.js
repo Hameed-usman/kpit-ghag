@@ -361,43 +361,51 @@ async function toggleRecording(mode) {
 async function startTwoWayCall() {
   hideMicError();
   const lang = (state.langHint === 'auto' ? 'ur' : state.langHint) || 'ur';
-  const greetings = {
-    ur: "السلام علیکم! خیبر پختونخوا سٹیزن ہیلپ لائن میں خوش آمدید۔ ڈومیسائل کے بارے میں آپ کو کیا معلومات چاہیے؟",
-    ps: "سلام علیکم! د خیبر پختونخوا ولسي خدمت مرکز ته ښه راغلاست. د ډومیسائل سند په اړه تاسو ته څه معلومات پکار دي؟",
-    en: "Hello and welcome to Khyber Pakhtunkhwa Citizen Facilitation. How may I assist you with your Domicile Certificate today?"
-  };
-
-  const greetingText = greetings[lang] || greetings.ur;
   state.isCallMode = true;
 
   elements.askRecordingStatus.classList.remove('hidden');
   const statusSpan = elements.askRecordingStatus.querySelector('span:last-child');
   if (statusSpan) {
-    statusSpan.textContent = '📞 Agent connected: Speaking official greeting...';
+    statusSpan.textContent = '📞 Call Connected (1700 Helpline): Agent Greeting...';
   }
 
-  // Speak greeting aloud
-  speakFallback(greetingText, lang);
-
-  // Automatically start recording after greeting completes
-  setTimeout(async () => {
-    if (!state.isRecording) {
+  try {
+    const greetingAudio = new Audio(`/api/v1/call/greeting?lang=${lang}`);
+    greetingAudio.onended = async () => {
       if (statusSpan) {
-        statusSpan.textContent = '🎙️ Listening to you... Speak your question now!';
+        statusSpan.textContent = '🎙️ Agent is listening... Speak your question now!';
       }
-      await startRecording('ask');
-    }
-  }, 4200);
+      if (!state.isRecording) {
+        await startRecording('ask');
+      }
+    };
+    await greetingAudio.play();
+  } catch (err) {
+    const greetings = {
+      ur: "السلام علیکم! خیبر پختونخوا سٹیزن ہیلپ لائن میں خوش آمدید۔ ڈومیسائل کے بارے میں آپ کو کیا معلومات چاہیے؟",
+      ps: "سلام علیکم! د خیبر پختونخوا ولسي خدمت مرکز ته ښه راغلاست. د ډومیسائل سند په اړه تاسو ته څه معلومات پکار دي؟",
+      en: "Hello and welcome to Khyber Pakhtunkhwa Citizen Facilitation. How may I assist you with your Domicile Certificate today?"
+    };
+    speakFallback(greetings[lang] || greetings.ur, lang);
+    setTimeout(async () => {
+      if (!state.isRecording) await startRecording('ask');
+    }, 4200);
+  }
 }
 
 function announceProcessing() {
   const lang = (state.langHint === 'auto' ? 'ur' : state.langHint) || 'ur';
-  const waitTexts = {
-    ur: "جی، میں آپ کے لیے سرکاری ریکارڈ دیکھ رہا ہوں، ذرا انتظار کیجیے۔",
-    ps: "ستاسو لپاره رسمي ریکارډ کتل کیږي، لږ انتظار وکړئ.",
-    en: "Checking verified government records for you, one moment please."
-  };
-  speakFallback(waitTexts[lang] || waitTexts.ur, lang);
+  try {
+    const waitAudio = new Audio(`/api/v1/call/wait?lang=${lang}`);
+    waitAudio.play().catch(() => {});
+  } catch (e) {
+    const waitTexts = {
+      ur: "جی، میں آپ کے لیے سرکاری ریکارڈ دیکھ رہا ہوں، ذرا انتظار کیجیے۔",
+      ps: "ستاسو لپاره رسمي ریکارډ کتل کیږي، لږ انتظار وکړئ.",
+      en: "Checking verified government records for you, one moment please."
+    };
+    speakFallback(waitTexts[lang] || waitTexts.ur, lang);
+  }
 }
 
 async function startRecording(mode) {

@@ -14,7 +14,7 @@ import logging
 import time
 from typing import Optional
 
-from fastapi import APIRouter, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, File, Form, HTTPException, Request, Response, UploadFile
 
 from app.config import settings
 from app.schemas import AskResponse, Lang, Outcome
@@ -37,6 +37,52 @@ HANDOFF_SMS: dict[str, str] = {
 }
 
 _ALLOWED_AUDIO_EXTENSIONS = {"wav", "webm", "mp3", "ogg", "m4a", "flac"}
+
+_GREETING_TEXTS: dict[str, str] = {
+    "ur": "السلام علیکم! خیبر پختونخوا سٹیزن ہیلپ لائن میں خوش آمدید۔ ڈومیسائل کے بارے میں آپ کو کیا معلومات چاہیے؟",
+    "ps": "سلام علیکم! د خیبر پختونخوا ولسي خدمت مرکز ته ښه راغلاست. د ډومیسائل سند په اړه تاسو ته څه معلومات پکار دي؟",
+    "en": "Hello and welcome to Khyber Pakhtunkhwa Citizen Facilitation. How may I assist you with your Domicile Certificate today?",
+}
+
+_WAIT_TEXTS: dict[str, str] = {
+    "ur": "جی، میں آپ کے لیے سرکاری ریکارڈ دیکھ رہا ہوں، ذرا انتظار کیجیے۔",
+    "ps": "ستاسو لپاره رسمي ریکارډ کتل کیږي، لږ انتظار وکړئ.",
+    "en": "Checking verified government records for you, one moment please.",
+}
+
+_CALL_AUDIO_CACHE: dict[str, bytes] = {}
+
+
+@router.get("/call/greeting")
+async def call_greeting(lang: str = "ur"):
+    """Return pre-synthesized call agent greeting MP3 audio."""
+    target_lang = lang if lang in ("ur", "ps", "en") else "ur"
+    cache_key = f"greeting_{target_lang}"
+    if cache_key not in _CALL_AUDIO_CACHE:
+        text = _GREETING_TEXTS.get(target_lang, _GREETING_TEXTS["ur"])
+        audio = await tts.synthesize(text, lang=target_lang)
+        if audio:
+            _CALL_AUDIO_CACHE[cache_key] = audio
+    audio_bytes = _CALL_AUDIO_CACHE.get(cache_key)
+    if not audio_bytes:
+        raise HTTPException(status_code=503, detail="Greeting audio unavailable")
+    return Response(content=audio_bytes, media_type="audio/mpeg")
+
+
+@router.get("/call/wait")
+async def call_wait(lang: str = "ur"):
+    """Return pre-synthesized call agent wait/checking MP3 audio."""
+    target_lang = lang if lang in ("ur", "ps", "en") else "ur"
+    cache_key = f"wait_{target_lang}"
+    if cache_key not in _CALL_AUDIO_CACHE:
+        text = _WAIT_TEXTS.get(target_lang, _WAIT_TEXTS["ur"])
+        audio = await tts.synthesize(text, lang=target_lang)
+        if audio:
+            _CALL_AUDIO_CACHE[cache_key] = audio
+    audio_bytes = _CALL_AUDIO_CACHE.get(cache_key)
+    if not audio_bytes:
+        raise HTTPException(status_code=503, detail="Wait audio unavailable")
+    return Response(content=audio_bytes, media_type="audio/mpeg")
 
 
 @router.post("/ask", response_model=AskResponse)
