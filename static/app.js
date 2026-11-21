@@ -612,27 +612,24 @@ function copyCallSms() {
 }
 
 function announceProcessing() {
+  // TEXT-ONLY status update — NO audio. The wait TTS caused double-voice overlap.
   const lang = (state.langHint === 'auto' ? 'ur' : state.langHint) || 'ur';
-  updateCallStatus('Checking official government records...');
-  updateCallCaption('1700 Officer (آفیسر)', 'جی، میں آپ کے لیے سرکاری ریکارڈ دیکھ رہا ہوں، ذرا انتظار کیجیے۔');
+  const captions = {
+    ur: 'ایک لمحہ... سرکاری دستاویزات میں آپ کا جواب ڈھونڈ رہا ہوں۔',
+    ps: 'یوه شیبه... د رسمي اسنادو کې ستاسو ځواب لټوم.',
+    en: 'One moment... searching official government records for your answer.'
+  };
+  updateCallStatus('⏳ Searching records...');
+  updateCallCaption('1700 آفیسر (Officer)', captions[lang] || captions.ur);
 
+  // Stop any currently playing audio (greeting leftover etc.)
   if (state.currentCallAudio) {
     state.currentCallAudio.pause();
     state.currentCallAudio.currentTime = 0;
     state.currentCallAudio = null;
   }
-
-  try {
-    const waitAudio = new Audio(`/api/v1/call/wait?lang=${lang}`);
-    state.currentCallAudio = waitAudio;
-    waitAudio.play().catch(() => {});
-  } catch (e) {
-    const waitTexts = {
-      ur: "جی، میں آپ کے لیے سرکاری ریکارڈ دیکھ رہا ہوں، ذرا انتظار کیجیے۔",
-      ps: "ستاسو لپاره رسمي ریکارډ کتل کیږي، لږ انتظار وکړئ.",
-      en: "Checking verified government records for you, one moment please."
-    };
-    speakFallback(waitTexts[lang] || waitTexts.ur, lang);
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
   }
 }
 
@@ -674,9 +671,7 @@ async function startRecording(mode) {
       if (elements.callDoneSpeakingBtn) elements.callDoneSpeakingBtn.classList.add('hidden');
       if (state.recordingMode === 'ask') {
         if (state.isCallMode) {
-          // Show "searching records" immediately so user knows their voice was heard
-          updateCallStatus('⏳ Searching official records...');
-          updateCallCaption('1700 آفیسر (Officer)', 'جی ضرور — میں ابھی آپ کے لیے سرکاری دستاویزات میں دیکھتا ہوں...');
+          // announceProcessing() now only updates TEXT — no audio — so no double voice
           announceProcessing();
         }
         submitAskAudio(audioBlob);
@@ -928,6 +923,23 @@ function renderAskResult(data, latencyMs = null) {
 
   state.lastResultLang = lang;
 
+  // ─── STOP ALL AUDIO before playing answer ────────────────────────────────
+  // This prevents any "wait" audio, greeting leftovers, or speech synthesis
+  // from overlapping with the answer voice.
+  if (state.currentCallAudio) {
+    state.currentCallAudio.pause();
+    state.currentCallAudio.currentTime = 0;
+    state.currentCallAudio = null;
+  }
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+  if (elements.askAudioPlayer && !elements.askAudioPlayer.paused) {
+    elements.askAudioPlayer.pause();
+    elements.askAudioPlayer.currentTime = 0;
+  }
+  // ─────────────────────────────────────────────────────────────────────────
+
   // Audio Playback
   const audioData = data.audio_b64 || data.audio_base64;
   const validAudioSrc = formatAudioSrc(audioData);
@@ -943,6 +955,7 @@ function renderAskResult(data, latencyMs = null) {
         console.warn('askAudioPlayer failed, attempting direct Audio():', err);
         try {
           const directAudio = new Audio(validAudioSrc);
+          state.currentCallAudio = directAudio;
           directAudio.play().catch(() => {
             elements.askAudioNotice.classList.remove('hidden');
             speakFallback(data.answer, lang);
