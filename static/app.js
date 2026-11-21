@@ -837,6 +837,8 @@ async function submitAskAudio(blob) {
     formData.append('audio', blob, filename);
     if (state.langHint && state.langHint !== 'auto') {
       formData.append('lang_hint', state.langHint);
+    } else {
+      formData.append('lang_hint', 'ur');
     }
 
     const res = await fetch('/api/v1/ask', {
@@ -1070,6 +1072,8 @@ async function submitCheckAudio(blob) {
     formData.append('audio', blob, filename);
     if (state.langHint && state.langHint !== 'auto') {
       formData.append('lang_hint', state.langHint);
+    } else {
+      formData.append('lang_hint', 'ur');
     }
 
     const res = await fetch('/api/v1/check', {

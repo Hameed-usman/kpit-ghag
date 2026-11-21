@@ -53,8 +53,8 @@ _LANG_MAP: dict[str, str] = {
 
 
 _WHISPER_PROMPT = (
-    "د خیبر پختونخوا ډومیسائل سرټیفیکیټ، پېښور، اسناد، شناختي کارډ، فارم-بی، "
-    "خیبر پختونخوا ڈومیسائل سرٹیفکیٹ، DC Office Peshawar Domicile Certificate citizen facilitation requirements."
+    "خیبر پختونخوا ڈومیسائل سرٹیفکیٹ، پشاور، سرکاری فیس 500 روپے، درکار دستاویزات اور کاغذات، شناختی کارڈ، فارم بی، 7 دن، "
+    "د خیبر پختونخوا ډومیسائل سرټیفیکیټ، پېښور، اسناد، شناختي کارډ، DC Office Peshawar Domicile Certificate citizen facilitation requirements."
 )
 
 
