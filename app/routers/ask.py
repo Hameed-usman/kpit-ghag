@@ -50,6 +50,12 @@ _WAIT_TEXTS: dict[str, str] = {
     "en": "Checking verified government records for you, one moment please.",
 }
 
+_GOODBYE_TEXTS: dict[str, str] = {
+    "ur": "شکریہ! حکومت خیبر پختونخوا کے سٹیزن پورٹل سے رابطہ کرنے کا شکریہ۔ اللہ حافظ!",
+    "ps": "مننه! د خیبر پختونخوا ولسي خدمت مرکز سره د تماس لپاره مننه. د خدای پامان!",
+    "en": "Thank you for contacting Khyber Pakhtunkhwa Citizen Facilitation. Have a great day!",
+}
+
 _CALL_AUDIO_CACHE: dict[str, bytes] = {}
 
 
@@ -82,6 +88,22 @@ async def call_wait(lang: str = "ur"):
     audio_bytes = _CALL_AUDIO_CACHE.get(cache_key)
     if not audio_bytes:
         raise HTTPException(status_code=503, detail="Wait audio unavailable")
+    return Response(content=audio_bytes, media_type="audio/mpeg")
+
+
+@router.get("/call/goodbye")
+async def call_goodbye(lang: str = "ur"):
+    """Return pre-synthesized call agent goodbye MP3 audio."""
+    target_lang = lang if lang in ("ur", "ps", "en") else "ur"
+    cache_key = f"goodbye_{target_lang}"
+    if cache_key not in _CALL_AUDIO_CACHE:
+        text = _GOODBYE_TEXTS.get(target_lang, _GOODBYE_TEXTS["ur"])
+        audio = await tts.synthesize(text, lang=target_lang)
+        if audio:
+            _CALL_AUDIO_CACHE[cache_key] = audio
+    audio_bytes = _CALL_AUDIO_CACHE.get(cache_key)
+    if not audio_bytes:
+        raise HTTPException(status_code=503, detail="Goodbye audio unavailable")
     return Response(content=audio_bytes, media_type="audio/mpeg")
 
 

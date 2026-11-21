@@ -207,7 +207,7 @@
             </div>
 
             <!-- Pulsing Mic Node -->
-            <div class="relative my-4 flex items-center justify-center z-10">
+            <div class="relative w-44 h-44 my-2 flex items-center justify-center z-10">
               <!-- Animated Pulse Rings -->
               <div id="ask-mic-ping-1" class="hidden absolute w-48 h-48 rounded-full bg-primary/15 pulse-ring-anim"></div>
               <div id="ask-mic-ping-2" class="hidden absolute w-36 h-36 rounded-full bg-secondary/20 pulse-ring-anim" style="animation-delay: 0.5s;"></div>
@@ -234,11 +234,32 @@
             </div>
 
             <!-- Two-Way Call Agent Simulator (1700 Helpline) -->
-            <div class="flex items-center gap-2 mt-3 z-10">
+            <div class="flex flex-col items-center gap-2 mt-3 z-10 w-full max-w-md">
               <button id="ask-call-agent-btn" type="button" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:brightness-110 text-white font-bold text-xs shadow-lg flex items-center gap-2 transition-all cursor-pointer border border-emerald-400/30 active:scale-95">
                 <span class="material-symbols-outlined text-base">call</span>
                 <span id="ask-call-btn-text">Simulate 1700 Call (Agent Speaks First)</span>
               </button>
+
+              <!-- Active In-Call Status Bar -->
+              <div id="call-active-bar" class="hidden flex items-center justify-between gap-3 w-full p-3 rounded-2xl bg-emerald-950/80 border border-emerald-500/50 shadow-xl backdrop-blur-sm animate-fade-in">
+                <div class="flex items-center gap-2.5">
+                  <span class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                  </span>
+                  <div class="text-left">
+                    <div class="text-xs font-bold text-emerald-300">📞 KP 1700 Live Call Active</div>
+                    <div id="call-active-status" class="text-[11px] font-mono text-emerald-400/90">Agent greeting...</div>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span id="call-timer" class="px-2.5 py-1 rounded-lg bg-emerald-900/60 text-emerald-200 text-xs font-mono font-bold">00:00</span>
+                  <button id="call-end-btn" type="button" class="px-3 py-1.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold flex items-center gap-1 shadow transition-all active:scale-95 cursor-pointer">
+                    <span class="material-symbols-outlined text-sm">call_end</span>
+                    <span>کال ختم کریں</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             <!-- 16-Bar Decibel Audio Waveform Visualizer -->
@@ -440,6 +461,33 @@
                   <div><span class="text-outline font-semibold">Handoff Reason:</span> <span id="ask-gb-handoff" class="text-amber-300 font-mono"></span></div>
                   <div><span class="text-outline font-semibold">Pipeline Latency:</span> <span id="ask-gb-latency" class="text-primary font-mono"></span></div>
                 </div>
+              </div>
+            </div>
+
+            <!-- Call Summary & SMS Dispatch Card (Completed 1700 Call Record) -->
+            <div id="call-summary-card" class="hidden bg-surface-container rounded-3xl p-6 border border-emerald-500/40 shadow-xl flex flex-col gap-4 animate-fade-in">
+              <div class="flex items-center justify-between pb-3 border-b border-surface-container-high flex-wrap gap-2">
+                <div class="flex items-center gap-2.5">
+                  <span class="p-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                    <span class="material-symbols-outlined text-xl">phone_in_talk</span>
+                  </span>
+                  <div>
+                    <h3 class="text-sm font-bold text-white">1700 Citizen Helpline Call — Verified Record</h3>
+                    <p class="text-xs text-on-surface-variant">Automated log of inquiries answered during the phone session</p>
+                  </div>
+                </div>
+                <span id="call-summary-duration" class="px-3 py-1 rounded-full text-xs font-mono bg-emerald-950 text-emerald-400 border border-emerald-500/30">Duration: 00:00</span>
+              </div>
+              <div id="call-summary-items" class="flex flex-col gap-3"></div>
+              <div class="p-3.5 rounded-2xl bg-surface-container-low border border-surface-variant flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div class="flex items-center gap-2 text-xs text-emerald-300">
+                  <span class="material-symbols-outlined text-lg">sms</span>
+                  <span id="call-sms-status">1-SMS Dispatch prepared for citizen mobile</span>
+                </div>
+                <button id="call-sms-copy-btn" type="button" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer">
+                  <span class="material-symbols-outlined text-sm">content_copy</span>
+                  <span>Copy Official SMS</span>
+                </button>
               </div>
             </div>
 

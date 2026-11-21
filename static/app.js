@@ -10,6 +10,10 @@ const state = {
   demoMode: false,
   demoCache: null,
   isRecording: false,
+  isCallMode: false,
+  callDurationSeconds: 0,
+  callTimerInterval: null,
+  callHistory: [],
   mediaRecorder: null,
   audioChunks: [],
   recordTimer: null,
@@ -40,6 +44,15 @@ const elements = {
   askMicPing2: document.getElementById('ask-mic-ping-2'),
   askRecordingStatus: document.getElementById('ask-recording-status'),
   askCallAgentBtn: document.getElementById('ask-call-agent-btn'),
+  callActiveBar: document.getElementById('call-active-bar'),
+  callActiveStatus: document.getElementById('call-active-status'),
+  callTimer: document.getElementById('call-timer'),
+  callEndBtn: document.getElementById('call-end-btn'),
+  callSummaryCard: document.getElementById('call-summary-card'),
+  callSummaryDuration: document.getElementById('call-summary-duration'),
+  callSummaryItems: document.getElementById('call-summary-items'),
+  callSmsStatus: document.getElementById('call-sms-status'),
+  callSmsCopyBtn: document.getElementById('call-sms-copy-btn'),
   askTimer: document.getElementById('ask-timer'),
   askTimerCircle: document.getElementById('ask-timer-circle'),
   askDecibelMeter: document.getElementById('ask-decibel-meter'),
@@ -176,6 +189,12 @@ function bindEvents() {
   // Two-Way Call Agent (1700 Helpline Simulation)
   if (elements.askCallAgentBtn) {
     elements.askCallAgentBtn.addEventListener('click', () => startTwoWayCall());
+  }
+  if (elements.callEndBtn) {
+    elements.callEndBtn.addEventListener('click', () => endTwoWayCall());
+  }
+  if (elements.callSmsCopyBtn) {
+    elements.callSmsCopyBtn.addEventListener('click', () => copyCallSms());
   }
 
   // Ask Form Submit
@@ -362,19 +381,30 @@ async function startTwoWayCall() {
   hideMicError();
   const lang = (state.langHint === 'auto' ? 'ur' : state.langHint) || 'ur';
   state.isCallMode = true;
+  state.callDurationSeconds = 0;
+  state.callHistory = [];
 
-  elements.askRecordingStatus.classList.remove('hidden');
-  const statusSpan = elements.askRecordingStatus.querySelector('span:last-child');
-  if (statusSpan) {
-    statusSpan.textContent = '📞 Call Connected (1700 Helpline): Agent Greeting...';
-  }
+  if (elements.askCallAgentBtn) elements.askCallAgentBtn.classList.add('hidden');
+  if (elements.callActiveBar) elements.callActiveBar.classList.remove('hidden');
+  if (elements.callSummaryCard) elements.callSummaryCard.classList.add('hidden');
+
+  updateCallStatus('Connecting & Agent Greeting...');
+
+  clearInterval(state.callTimerInterval);
+  state.callTimerInterval = setInterval(() => {
+    state.callDurationSeconds++;
+    const mm = String(Math.floor(state.callDurationSeconds / 60)).padStart(2, '0');
+    const ss = String(state.callDurationSeconds % 60).padStart(2, '0');
+    if (elements.callTimer) {
+      elements.callTimer.textContent = `${mm}:${ss}`;
+    }
+  }, 1000);
 
   try {
     const greetingAudio = new Audio(`/api/v1/call/greeting?lang=${lang}`);
     greetingAudio.onended = async () => {
-      if (statusSpan) {
-        statusSpan.textContent = '🎙️ Agent is listening... Speak your question now!';
-      }
+      if (!state.isCallMode) return;
+      updateCallStatus('Agent listening... Speak your question hands-free');
       if (!state.isRecording) {
         await startRecording('ask');
       }
@@ -388,8 +418,102 @@ async function startTwoWayCall() {
     };
     speakFallback(greetings[lang] || greetings.ur, lang);
     setTimeout(async () => {
+      if (!state.isCallMode) return;
+      updateCallStatus('Agent listening... Speak your question hands-free');
       if (!state.isRecording) await startRecording('ask');
     }, 4200);
+  }
+}
+
+function updateCallStatus(msg) {
+  if (elements.callActiveStatus) {
+    elements.callActiveStatus.textContent = msg;
+  }
+  if (elements.askRecordingStatus) {
+    elements.askRecordingStatus.classList.remove('hidden');
+    const statusSpan = elements.askRecordingStatus.querySelector('span:last-child');
+    if (statusSpan) statusSpan.textContent = `📞 1700 Call: ${msg}`;
+  }
+}
+
+async function endTwoWayCall() {
+  if (!state.isCallMode) return;
+  state.isCallMode = false;
+  clearInterval(state.callTimerInterval);
+
+  if (state.isRecording) {
+    stopRecording();
+  }
+
+  const lang = (state.langHint === 'auto' ? 'ur' : state.langHint) || 'ur';
+  try {
+    const goodbyeAudio = new Audio(`/api/v1/call/goodbye?lang=${lang}`);
+    goodbyeAudio.play().catch(() => {});
+  } catch (e) {
+    speakFallback("شکریہ! حکومت خیبر پختونخوا کے سٹیزن پورٹل سے رابطہ کرنے کا شکریہ۔ اللہ حافظ!", lang);
+  }
+
+  if (elements.callActiveBar) elements.callActiveBar.classList.add('hidden');
+  if (elements.askCallAgentBtn) elements.askCallAgentBtn.classList.remove('hidden');
+  if (elements.askRecordingStatus) elements.askRecordingStatus.classList.add('hidden');
+
+  renderCallSummary();
+}
+
+function renderCallSummary() {
+  if (!elements.callSummaryCard) return;
+  elements.callSummaryCard.classList.remove('hidden');
+
+  const mm = String(Math.floor(state.callDurationSeconds / 60)).padStart(2, '0');
+  const ss = String(state.callDurationSeconds % 60).padStart(2, '0');
+  if (elements.callSummaryDuration) {
+    elements.callSummaryDuration.textContent = `Duration: ${mm}:${ss} (${state.callHistory.length} Inquiries Answered)`;
+  }
+
+  if (elements.callSummaryItems) {
+    elements.callSummaryItems.innerHTML = '';
+    if (state.callHistory.length === 0) {
+      elements.callSummaryItems.innerHTML = '<p class="text-xs text-on-surface-variant italic">No audio inquiries were completed during this call session.</p>';
+    } else {
+      state.callHistory.forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.className = 'p-3.5 rounded-xl bg-surface-container-low border border-surface-variant text-xs flex flex-col gap-2';
+        const isRtl = (item.lang === 'ur' || item.lang === 'ps');
+        div.innerHTML = `
+          <div class="flex items-center justify-between text-[11px] text-outline font-semibold">
+            <span>Inquiry #${idx + 1} (${item.lang.toUpperCase()})</span>
+            <span class="${item.confident ? 'text-emerald-400' : 'text-amber-400'} font-mono">${item.confident ? 'Official Verified' : 'Facilitation Hand-off'}</span>
+          </div>
+          <p class="text-white font-medium ${isRtl ? 'text-right' : 'text-left'}" dir="${isRtl ? 'rtl' : 'ltr'}"><span class="text-secondary font-bold">سائل (Citizen):</span> ${item.question}</p>
+          <p class="text-emerald-200/90 ${isRtl ? 'text-right' : 'text-left'}" dir="${isRtl ? 'rtl' : 'ltr'}"><span class="text-primary font-bold">گھگ ایجنٹ (Ghag):</span> ${item.answer}</p>
+        `;
+        elements.callSummaryItems.appendChild(div);
+      });
+    }
+  }
+
+  elements.callSummaryCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+function copyCallSms() {
+  let textToCopy = '';
+  if (state.callHistory && state.callHistory.length > 0) {
+    const latest = state.callHistory[state.callHistory.length - 1];
+    textToCopy = latest.sms || latest.answer;
+  } else if (elements.askSmsText) {
+    textToCopy = elements.askSmsText.textContent;
+  }
+
+  if (textToCopy) {
+    navigator.clipboard.writeText(textToCopy);
+  }
+
+  if (elements.callSmsCopyBtn) {
+    const orig = elements.callSmsCopyBtn.innerHTML;
+    elements.callSmsCopyBtn.innerHTML = '<span class="material-symbols-outlined text-sm">check</span><span>Copied!</span>';
+    setTimeout(() => {
+      elements.callSmsCopyBtn.innerHTML = orig;
+    }, 2000);
   }
 }
 
@@ -442,7 +566,6 @@ async function startRecording(mode) {
       if (state.recordingMode === 'ask') {
         if (state.isCallMode) {
           announceProcessing();
-          state.isCallMode = false;
         }
         submitAskAudio(audioBlob);
       } else {
@@ -688,6 +811,34 @@ function renderAskResult(data, latencyMs = null) {
     elements.askAudioNotice.classList.remove('hidden');
     elements.askAudioNotice.innerHTML = '🔊 <em>Tap green speaker icon to listen</em>';
     speakFallback(data.answer, lang);
+  }
+
+  // Active Multi-Turn Call Agent Hook
+  if (state.isCallMode) {
+    state.callHistory.push({
+      question: data.transcript || data.question || 'Citizen inquiry',
+      answer: data.answer || '',
+      sms: data.sms_text || data.sms || '',
+      lang: lang,
+      confident: (data.confident !== false && data.outcome !== 'handoff')
+    });
+    updateCallStatus('Agent speaking verified answer...');
+
+    const onAnswerFinished = () => {
+      if (!state.isCallMode) return;
+      updateCallStatus('Agent listening... Ask follow-up or tap "کال ختم کریں"');
+      setTimeout(async () => {
+        if (state.isCallMode && !state.isRecording) {
+          await startRecording('ask');
+        }
+      }, 1400);
+    };
+
+    if (audioData && elements.askAudioPlayer) {
+      elements.askAudioPlayer.onended = onAnswerFinished;
+    } else {
+      setTimeout(onAnswerFinished, 4000);
+    }
   }
 
   // SMS Bubble
