@@ -48,6 +48,9 @@ const elements = {
   callActiveStatus: document.getElementById('call-active-status'),
   callTimer: document.getElementById('call-timer'),
   callEndBtn: document.getElementById('call-end-btn'),
+  callDoneSpeakingBtn: document.getElementById('call-done-speaking-btn'),
+  callCaptionSpeaker: document.getElementById('call-caption-speaker'),
+  callCaptionText: document.getElementById('call-caption-text'),
   callSummaryCard: document.getElementById('call-summary-card'),
   callSummaryDuration: document.getElementById('call-summary-duration'),
   callSummaryItems: document.getElementById('call-summary-items'),
@@ -192,6 +195,13 @@ function bindEvents() {
   }
   if (elements.callEndBtn) {
     elements.callEndBtn.addEventListener('click', () => endTwoWayCall());
+  }
+  if (elements.callDoneSpeakingBtn) {
+    elements.callDoneSpeakingBtn.addEventListener('click', () => {
+      if (state.isRecording) {
+        stopRecording();
+      }
+    });
   }
   if (elements.callSmsCopyBtn) {
     elements.callSmsCopyBtn.addEventListener('click', () => copyCallSms());
@@ -375,6 +385,27 @@ async function toggleRecording(mode) {
 }
 
 /**
+ * Format Audio Source safely (prevents double data: URI prefix)
+ */
+function formatAudioSrc(audioData) {
+  if (!audioData) return '';
+  if (audioData.startsWith('data:')) {
+    return audioData;
+  }
+  return `data:audio/mpeg;base64,${audioData}`;
+}
+
+function updateCallCaption(speaker, text) {
+  if (elements.callCaptionSpeaker) {
+    elements.callCaptionSpeaker.textContent = speaker;
+  }
+  if (elements.callCaptionText) {
+    elements.callCaptionText.textContent = text;
+    elements.callCaptionText.dir = (state.lastResultLang === 'en' ? 'ltr' : 'rtl');
+  }
+}
+
+/**
  * Two-Way Automated Call Agent (1700 Simulation)
  */
 async function startTwoWayCall() {
@@ -384,11 +415,17 @@ async function startTwoWayCall() {
   state.callDurationSeconds = 0;
   state.callHistory = [];
 
+  // Unlock browser audio permissions for this user click gesture
+  if (elements.askAudioPlayer) {
+    elements.askAudioPlayer.play().then(() => elements.askAudioPlayer.pause()).catch(() => {});
+  }
+
   if (elements.askCallAgentBtn) elements.askCallAgentBtn.classList.add('hidden');
   if (elements.callActiveBar) elements.callActiveBar.classList.remove('hidden');
   if (elements.callSummaryCard) elements.callSummaryCard.classList.add('hidden');
 
   updateCallStatus('Connecting & Agent Greeting...');
+  updateCallCaption('1700 Officer (آفیسر)', 'السلام علیکم! خیبر پختونخوا سٹیزن ہیلپ لائن میں خوش آمدید۔ ڈومیسائل کے بارے میں آپ کو کیا معلومات چاہیے؟');
 
   clearInterval(state.callTimerInterval);
   state.callTimerInterval = setInterval(() => {
@@ -405,6 +442,7 @@ async function startTwoWayCall() {
     greetingAudio.onended = async () => {
       if (!state.isCallMode) return;
       updateCallStatus('Agent listening... Speak your question hands-free');
+      updateCallCaption('سائل (Citizen)', 'آپ بولیے (مائیک کھلا ہے)... بولنے کے بعد "میں بول چکا ہوں" دبائیں یا توقف کریں');
       if (!state.isRecording) {
         await startRecording('ask');
       }
@@ -420,6 +458,7 @@ async function startTwoWayCall() {
     setTimeout(async () => {
       if (!state.isCallMode) return;
       updateCallStatus('Agent listening... Speak your question hands-free');
+      updateCallCaption('سائل (Citizen)', 'آپ بولیے (مائیک کھلا ہے)... بولنے کے بعد "میں بول چکا ہوں" دبائیں یا توقف کریں');
       if (!state.isRecording) await startRecording('ask');
     }, 4200);
   }
@@ -446,6 +485,9 @@ async function endTwoWayCall() {
   }
 
   const lang = (state.langHint === 'auto' ? 'ur' : state.langHint) || 'ur';
+  updateCallStatus('Call Completed');
+  updateCallCaption('1700 Officer (آفیسر)', 'شکریہ! حکومت خیبر پختونخوا کے سٹیزن پورٹل سے رابطہ کرنے کا شکریہ۔ اللہ حافظ!');
+
   try {
     const goodbyeAudio = new Audio(`/api/v1/call/goodbye?lang=${lang}`);
     goodbyeAudio.play().catch(() => {});
@@ -453,6 +495,7 @@ async function endTwoWayCall() {
     speakFallback("شکریہ! حکومت خیبر پختونخوا کے سٹیزن پورٹل سے رابطہ کرنے کا شکریہ۔ اللہ حافظ!", lang);
   }
 
+  if (elements.callDoneSpeakingBtn) elements.callDoneSpeakingBtn.classList.add('hidden');
   if (elements.callActiveBar) elements.callActiveBar.classList.add('hidden');
   if (elements.askCallAgentBtn) elements.askCallAgentBtn.classList.remove('hidden');
   if (elements.askRecordingStatus) elements.askRecordingStatus.classList.add('hidden');
@@ -519,6 +562,9 @@ function copyCallSms() {
 
 function announceProcessing() {
   const lang = (state.langHint === 'auto' ? 'ur' : state.langHint) || 'ur';
+  updateCallStatus('Checking official government records...');
+  updateCallCaption('1700 Officer (آفیسر)', 'جی، میں آپ کے لیے سرکاری ریکارڈ دیکھ رہا ہوں، ذرا انتظار کیجیے۔');
+
   try {
     const waitAudio = new Audio(`/api/v1/call/wait?lang=${lang}`);
     waitAudio.play().catch(() => {});
@@ -563,6 +609,7 @@ async function startRecording(mode) {
       stream.getTracks().forEach(track => track.stop());
       const mime = state.mediaRecorder.mimeType || 'audio/webm';
       const audioBlob = new Blob(state.audioChunks, { type: mime });
+      if (elements.callDoneSpeakingBtn) elements.callDoneSpeakingBtn.classList.add('hidden');
       if (state.recordingMode === 'ask') {
         if (state.isCallMode) {
           announceProcessing();
@@ -577,6 +624,9 @@ async function startRecording(mode) {
     state.isRecording = true;
     state.recordSeconds = 0;
 
+    // In call mode, keep speech prompt to 12s max for faster multi-turn cadence
+    const effectiveMaxSeconds = state.isCallMode ? 12 : state.maxRecordSeconds;
+
     // UI Updates
     const langNames = {
       'auto': 'Auto-detect',
@@ -590,8 +640,13 @@ async function startRecording(mode) {
       elements.askMicPing1.classList.remove('hidden');
       elements.askMicPing2.classList.remove('hidden');
       elements.askRecordingStatus.classList.remove('hidden');
-      elements.askRecordingStatus.querySelector('span:last-child').textContent = `Listening in ${activeLangLabel}... (Max 30s)`;
+      elements.askRecordingStatus.querySelector('span:last-child').textContent = `Listening in ${activeLangLabel}... (Max ${effectiveMaxSeconds}s)`;
       elements.askTimer.textContent = '00:00';
+      if (state.isCallMode) {
+        if (elements.callDoneSpeakingBtn) elements.callDoneSpeakingBtn.classList.remove('hidden');
+        updateCallStatus('Agent listening... Speak your question hands-free');
+        updateCallCaption('سائل (Citizen)', 'آپ بولیے (مائیک کھلا ہے)... بول کر "میں بول چکا ہوں" دبائیں یا توقف کریں');
+      }
       startWaveformSimulation();
     } else {
       elements.checkRecordingStatus.classList.remove('hidden');
@@ -607,13 +662,13 @@ async function startRecording(mode) {
       if (mode === 'ask') {
         elements.askTimer.textContent = timeStr;
         // Progress circle
-        const offset = 276 - (276 * (state.recordSeconds / state.maxRecordSeconds));
+        const offset = 276 - (276 * (state.recordSeconds / effectiveMaxSeconds));
         elements.askTimerCircle.style.strokeDashoffset = offset;
       } else {
         elements.checkTimer.textContent = timeStr;
       }
 
-      if (state.recordSeconds >= state.maxRecordSeconds) {
+      if (state.recordSeconds >= effectiveMaxSeconds) {
         stopRecording();
       }
     }, 1000);
@@ -796,16 +851,28 @@ function renderAskResult(data, latencyMs = null) {
 
   // Audio Playback
   const audioData = data.audio_b64 || data.audio_base64;
-  if (audioData) {
+  const validAudioSrc = formatAudioSrc(audioData);
+
+  if (validAudioSrc) {
     elements.askAudioPlayer.classList.remove('hidden');
-    elements.askAudioPlayer.src = `data:audio/mp3;base64,${audioData}`;
+    elements.askAudioPlayer.src = validAudioSrc;
     elements.askAudioPlayer.load();
     elements.askAudioNotice.classList.add('hidden');
-    elements.askAudioPlayer.play().then(() => {
-      elements.askAudioNotice.classList.add('hidden');
-    }).catch(() => {
-      elements.askAudioNotice.classList.remove('hidden');
-    });
+    const playPromise = elements.askAudioPlayer.play();
+    if (playPromise !== undefined) {
+      playPromise.catch((err) => {
+        console.warn('askAudioPlayer failed, attempting direct Audio():', err);
+        try {
+          const directAudio = new Audio(validAudioSrc);
+          directAudio.play().catch(() => {
+            elements.askAudioNotice.classList.remove('hidden');
+            speakFallback(data.answer, lang);
+          });
+        } catch (e2) {
+          speakFallback(data.answer, lang);
+        }
+      });
+    }
   } else {
     elements.askAudioPlayer.removeAttribute('src');
     elements.askAudioNotice.classList.remove('hidden');
@@ -823,21 +890,23 @@ function renderAskResult(data, latencyMs = null) {
       confident: (data.confident !== false && data.outcome !== 'handoff')
     });
     updateCallStatus('Agent speaking verified answer...');
+    updateCallCaption('1700 Officer (آفیسر)', data.answer || '');
 
     const onAnswerFinished = () => {
       if (!state.isCallMode) return;
-      updateCallStatus('Agent listening... Ask follow-up or tap "کال ختم کریں"');
+      updateCallStatus('Agent listening... Speak next question hands-free');
+      updateCallCaption('سائل (Citizen)', 'آپ بولیے (اگلا سوال)... یا کال ختم کرنے کے لیے نیچے بٹن دبائیں');
       setTimeout(async () => {
         if (state.isCallMode && !state.isRecording) {
           await startRecording('ask');
         }
-      }, 1400);
+      }, 1000);
     };
 
-    if (audioData && elements.askAudioPlayer) {
+    if (validAudioSrc && elements.askAudioPlayer) {
       elements.askAudioPlayer.onended = onAnswerFinished;
     } else {
-      setTimeout(onAnswerFinished, 4000);
+      setTimeout(onAnswerFinished, 4500);
     }
   }
 
@@ -1032,13 +1101,15 @@ function renderCheckResult(data, latencyMs = null) {
 
   // Audio Playback
   const audioData = data.audio_b64 || data.audio_base64;
-  if (audioData) {
+  const validAudioSrc = formatAudioSrc(audioData);
+  if (validAudioSrc) {
     elements.checkAudioPlayer.classList.remove('hidden');
-    elements.checkAudioPlayer.src = `data:audio/mp3;base64,${audioData}`;
+    elements.checkAudioPlayer.src = validAudioSrc;
     elements.checkAudioPlayer.load();
     elements.checkAudioNotice.classList.add('hidden');
     elements.checkAudioPlayer.play().catch(() => {
       elements.checkAudioNotice.classList.remove('hidden');
+      speakFallback(data.spoken || data.explanation, data.lang);
     });
   } else {
     elements.checkAudioPlayer.removeAttribute('src');
