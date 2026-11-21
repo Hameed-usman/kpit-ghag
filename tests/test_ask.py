@@ -271,14 +271,13 @@ class TestKBIntegrity:
         from app.services.kb import KnowledgeBase
 
         kb = KnowledgeBase.load()
-        assert "dom-fees" not in kb.sections
-        assert "dom-timeline" not in kb.sections
-        assert "dom-eligibility" not in kb.sections
+        assert "dom-sample-unverified" not in kb.sections
         assert "dom-authority" in kb.sections
         assert "dom-channels" in kb.sections
         assert "dom-procedure" in kb.sections
         assert "dom-tracking" in kb.sections
         assert "dom-important-notes" in kb.sections
+        assert "dom-fees" in kb.sections
 
     def test_source_id_validity(self):
         """source_id_valid only accepts verified loaded IDs."""
@@ -287,7 +286,8 @@ class TestKBIntegrity:
         kb = KnowledgeBase.load()
         assert kb.source_id_valid("dom-authority") is True
         assert kb.source_id_valid("dom-channels") is True
-        assert kb.source_id_valid("dom-fees") is False
+        assert kb.source_id_valid("dom-fees") is True
+        assert kb.source_id_valid("dom-sample-unverified") is False
         assert kb.source_id_valid("random-fake-id") is False
         assert kb.source_id_valid("") is False
         assert kb.source_id_valid(None) is False

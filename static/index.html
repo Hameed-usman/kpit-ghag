@@ -230,7 +230,15 @@
                 <span id="ask-timer" class="text-primary font-bold tracking-widest text-sm">00:00</span>
                 <span class="text-outline">/ 00:30s max</span>
               </div>
-              <p class="text-xs text-on-surface-variant">Tap to speak in Urdu, Pashto, or English • Tap again to process</p>
+              <p class="text-xs text-on-surface-variant">Tap mic to speak • Or click below for automated phone agent</p>
+            </div>
+
+            <!-- Two-Way Call Agent Simulator (1700 Helpline) -->
+            <div class="flex items-center gap-2 mt-3 z-10">
+              <button id="ask-call-agent-btn" type="button" class="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:brightness-110 text-white font-bold text-xs shadow-lg flex items-center gap-2 transition-all cursor-pointer border border-emerald-400/30 active:scale-95">
+                <span class="material-symbols-outlined text-base">call</span>
+                <span id="ask-call-btn-text">Simulate 1700 Call (Agent Speaks First)</span>
+              </button>
             </div>
 
             <!-- 16-Bar Decibel Audio Waveform Visualizer -->

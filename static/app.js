@@ -39,6 +39,7 @@ const elements = {
   askMicPing1: document.getElementById('ask-mic-ping-1'),
   askMicPing2: document.getElementById('ask-mic-ping-2'),
   askRecordingStatus: document.getElementById('ask-recording-status'),
+  askCallAgentBtn: document.getElementById('ask-call-agent-btn'),
   askTimer: document.getElementById('ask-timer'),
   askTimerCircle: document.getElementById('ask-timer-circle'),
   askDecibelMeter: document.getElementById('ask-decibel-meter'),
@@ -171,6 +172,11 @@ function bindEvents() {
 
   // Ask Voice Recording
   elements.askMicBtn.addEventListener('click', () => toggleRecording('ask'));
+
+  // Two-Way Call Agent (1700 Helpline Simulation)
+  if (elements.askCallAgentBtn) {
+    elements.askCallAgentBtn.addEventListener('click', () => startTwoWayCall());
+  }
 
   // Ask Form Submit
   elements.askTextForm.addEventListener('submit', (e) => {
@@ -349,6 +355,51 @@ async function toggleRecording(mode) {
   }
 }
 
+/**
+ * Two-Way Automated Call Agent (1700 Simulation)
+ */
+async function startTwoWayCall() {
+  hideMicError();
+  const lang = (state.langHint === 'auto' ? 'ur' : state.langHint) || 'ur';
+  const greetings = {
+    ur: "السلام علیکم! خیبر پختونخوا سٹیزن ہیلپ لائن میں خوش آمدید۔ ڈومیسائل کے بارے میں آپ کو کیا معلومات چاہیے؟",
+    ps: "سلام علیکم! د خیبر پختونخوا ولسي خدمت مرکز ته ښه راغلاست. د ډومیسائل سند په اړه تاسو ته څه معلومات پکار دي؟",
+    en: "Hello and welcome to Khyber Pakhtunkhwa Citizen Facilitation. How may I assist you with your Domicile Certificate today?"
+  };
+
+  const greetingText = greetings[lang] || greetings.ur;
+  state.isCallMode = true;
+
+  elements.askRecordingStatus.classList.remove('hidden');
+  const statusSpan = elements.askRecordingStatus.querySelector('span:last-child');
+  if (statusSpan) {
+    statusSpan.textContent = '📞 Agent connected: Speaking official greeting...';
+  }
+
+  // Speak greeting aloud
+  speakFallback(greetingText, lang);
+
+  // Automatically start recording after greeting completes
+  setTimeout(async () => {
+    if (!state.isRecording) {
+      if (statusSpan) {
+        statusSpan.textContent = '🎙️ Listening to you... Speak your question now!';
+      }
+      await startRecording('ask');
+    }
+  }, 4200);
+}
+
+function announceProcessing() {
+  const lang = (state.langHint === 'auto' ? 'ur' : state.langHint) || 'ur';
+  const waitTexts = {
+    ur: "جی، میں آپ کے لیے سرکاری ریکارڈ دیکھ رہا ہوں، ذرا انتظار کیجیے۔",
+    ps: "ستاسو لپاره رسمي ریکارډ کتل کیږي، لږ انتظار وکړئ.",
+    en: "Checking verified government records for you, one moment please."
+  };
+  speakFallback(waitTexts[lang] || waitTexts.ur, lang);
+}
+
 async function startRecording(mode) {
   hideMicError();
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -381,6 +432,10 @@ async function startRecording(mode) {
       const mime = state.mediaRecorder.mimeType || 'audio/webm';
       const audioBlob = new Blob(state.audioChunks, { type: mime });
       if (state.recordingMode === 'ask') {
+        if (state.isCallMode) {
+          announceProcessing();
+          state.isCallMode = false;
+        }
         submitAskAudio(audioBlob);
       } else {
         submitCheckAudio(audioBlob);
